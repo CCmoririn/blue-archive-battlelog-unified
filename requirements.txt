@@ -9,3 +9,5 @@ google-cloud-vision==3.3.1
 google-auth==2.23.3
 gunicorn==20.1.0
 python-dotenv==1.0.1
+setuptools
+wheel
