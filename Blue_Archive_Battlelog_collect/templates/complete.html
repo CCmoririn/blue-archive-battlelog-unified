@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <script async src="https://www.googletagmanager.com/pagead/js/adsbygoogle.js?client=ca-pub-7051331824444850"
+       crossorigin="anonymous"></script>
+  <title>アップロードが完了しました</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* --- CSS部分はそのまま（省略可なら指示してね） --- */
+    body {
+      background: linear-gradient(135deg, #e4f2fd 0%, #f7fafd 100%);
+      min-height: 100vh;
+      font-family: "Segoe UI", "ヒラギノ角ゴ ProN", "Meiryo", sans-serif;
+      margin: 0;
+      padding-top: 70px;
+    }
+    .navbar-custom {
+      position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+      background: #eb6b92;
+      box-shadow: 0 2px 10px #acd8fa20;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 34px 0 16px; min-height: 62px;
+    }
+    .logo-link { display: flex; align-items: center; height: 56px; text-decoration: none; }
+    .logo-text { font-size: 2.1em; font-weight: 800; color: #fff; letter-spacing: 0.06em; line-height: 1.05; user-select: none; transition: color .15s;}
+    .logo-link:hover .logo-text { color: #d73770; }
+    .nav-links { display: flex; gap: 18px;}
+    .nav-btn {
+      color: #fff;
+      background: transparent;
+      border: 2px solid #fff;
+      border-radius: 9px;
+      padding: 8px 28px;
+      font-size: 1.11em;
+      font-weight: bold;
+      text-decoration: none;
+      margin-left: 10px;
+      transition: background .16s, color .13s, border-color .16s;
+      box-shadow: 0 1px 6px #338eda10;
+    }
+    .nav-btn:hover {
+      background: #f170a7;
+      color: #fff;
+      border-color: #f170a7;
+    }
+    .hamburger { display: none; flex-direction: column; justify-content: center; align-items: center; width: 42px; height: 42px; background: none; border: none; cursor: pointer; margin-left: 18px; z-index: 120;}
+    .hamburger span { width: 28px; height: 4px; margin: 3px 0; background: #fff; border-radius: 2px; display: block; transition: all .2s;}
+    .sidebar-bg { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(30,60,90,0.18); z-index: 101;}
+    .sidebar { display: flex; flex-direction: column; position: fixed; top: 0; right: -270px; width: 270px; height: 100vh; background: #fff; box-shadow: -2px 0 22px #338eda1a; padding: 22px 24px 0 24px; z-index: 102; transition: right .23s cubic-bezier(.7,.1,.37,1.3);}
+    .sidebar.active { right: 0; }
+    .sidebar-link { color: #f170a7; text-decoration: none; font-size: 1.13em; padding: 16px 0; border-bottom: 1px solid #eef2f7; font-weight: bold; display: block; transition: color .13s;}
+    .sidebar-link:last-child { border-bottom: none; }
+    .sidebar-link:hover { color: #eb6b92; }
+    .close-btn { background: none; border: none; font-size: 2em; color: #888; position: absolute; top: 10px; right: 18px; cursor: pointer; }
+    @media (max-width: 1000px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .navbar-custom { padding: 0 11px 0 7px; }
+      .logo-text { font-size: 1.48em; }
+    }
+    .main-card {
+      max-width: 430px;
+      margin: 80px auto 40px auto;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 6px 28px #a7d7f225, 0 1px 0 #f8fbff;
+      padding: 44px 26px 32px 26px;
+      text-align: center;
+    }
+    .complete-title {
+      font-size: 2.0em;
+      font-weight: 900;
+      color: #338eda;
+      letter-spacing: 0.06em;
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.3;
+      text-shadow: 0 1px 8px #fafd, 0 1px 0 #c8e6fa;
+    }
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5em;
+      margin-top: 6px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .btn-blue {
+      background: linear-gradient(90deg, #5ad5e9, #3c8fd8 90%);
+      color: #fff !important;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 38px;
+      font-size: 1.13em;
+      font-weight: bold;
+      box-shadow: 0 2px 12px #83cbf822;
+      margin: 0 7px 8px 7px;
+      transition: background .16s;
+      display: inline-block;
+      text-decoration: none;
+      text-align: center;
+    }
+    .btn-blue:hover {
+      background: #3499e5;
+      color: #fff !important;
+      text-decoration: none;
+    }
+    .btn-outline {
+      background: #fff;
+      color: #338eda !important;
+      border: 2px solid #b9e3f8;
+      border-radius: 12px;
+      padding: 13px 38px;
+      font-size: 1.13em;
+      font-weight: bold;
+      margin: 0 7px 8px 7px;
+      transition: background .14s, color .12s, border-color .12s;
+      display: inline-block;
+      text-decoration: none;
+      text-align: center;
+    }
+    .btn-outline:hover {
+      background: #e8f5ff;
+      color: #2277bb !important;
+      border-color: #65c5f6;
+      text-decoration: none;
+    }
+    @media (max-width: 600px) {
+      .main-card { max-width: 98vw; padding: 18px 2vw 10vw 2vw;}
+      .complete-title { font-size: 1.28em; }
+      .btn-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+      .btn-blue, .btn-outline {
+        width: 98vw;
+        max-width: 380px;
+        min-width: 0;
+        padding: 13px 0;
+        font-size: 1.06em;
+        margin: 0 auto 12px auto;
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ▼▼ 共通ナビゲーション・ヘッダー・サイドバー ▼▼ -->
+  <header>
+    <nav class="navbar-custom">
+      <a href="{{ url_for('limited.index') }}" class="logo-link">
+        <span class="logo-text">BlueArchive対抗戦DB</span>
+      </a>
+      <div class="nav-links">
+        <a href="{{ url_for('limited.upload') }}" class="nav-btn">アップロード</a>
+        <a href="{{ url_for('limited.search') }}" class="nav-btn">編成検索</a>
+        <a href="{{ url_for('limited.defense_suggest') }}" class="nav-btn">防衛メーカー</a>
+      </div>
+      <button class="hamburger" id="hamburger-btn">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+    <div class="sidebar-bg" id="sidebar-bg"></div>
+    <aside class="sidebar" id="sidebar">
+      <button class="close-btn" id="close-sidebar">&times;</button>
+      <a href="{{ url_for('limited.upload') }}" class="sidebar-link">アップロード</a>
+      <a href="{{ url_for('limited.search') }}" class="sidebar-link">編成検索</a>
+      <a href="{{ url_for('limited.defense_suggest') }}" class="sidebar-link">防衛編成メーカー</a>
+    </aside>
+  </header>
+  <!-- ▲▲ ヘッダー・サイドバーここまで ▲▲ -->
+
+  <div class="main-card">
+    <div class="complete-title">
+      アップロードが<br>完了しました！
+    </div>
+    <div class="btn-row">
+      <a href="{{ url_for('limited.upload') }}" class="btn-blue">もう一枚UPする</a>
+      <a href="{{ url_for('limited.search') }}" class="btn-outline">編成検索へ</a>
+    </div>
+  </div>
+  <script>
+    // サイドバー動作（共通）
+    const hamburger = document.getElementById('hamburger-btn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBg = document.getElementById('sidebar-bg');
+    const closeSidebar = document.getElementById('close-sidebar');
+    hamburger.addEventListener('click', () => {
+      sidebar.classList.add('active');
+      sidebarBg.style.display = 'block';
+    });
+    sidebarBg.addEventListener('click', () => {
+      sidebar.classList.remove('active');
+      sidebarBg.style.display = 'none';
+    });
+    closeSidebar.addEventListener('click', () => {
+      sidebar.classList.remove('active');
+      sidebarBg.style.display = 'none';
+    });
+  </script>
+</body>
+</html>

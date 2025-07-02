@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+<meta name="google-site-verification" content="4GMC-Y_YcFE5giRV5RQjmObgAuhmClSSKmrSs333ZFY" />
+<meta name="google-site-verification" content="5jdGgzQ9EcR6LwSRfCz2ONeqcsCQ9Cvhrw0Wylp1DcA" />
+<link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-64P3RM78K2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-64P3RM78K2');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js?client=ca-pub-7051331824444850"
+     crossorigin="anonymous"></script>
+  <title>ブルーアーカイブ対抗戦DB | 編成検索</title>
+<link rel="canonical" href="https://bluearchive-battlelog-p.com/search">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="戦術対抗戦の対戦結果を記録、検索できるデータベース。スクリーンショットから自動で結果を読み取って記録できます。">
+  <meta name="keywords" content="ブルーアーカイブ,ブルアカ,対抗戦,編成,DB,検索,勝敗,データベース,アップロード">
+  <!-- OGP -->
+  <meta property="og:title" content="ブルーアーカイブ対抗戦DB | 編成検索">
+  <meta property="og:type" content="website">
+  <meta property="og:description" content="戦術対抗戦の対戦結果を記録、検索できるデータベース。スクリーンショットから自動で結果を読み取って記録できます。">
+  <meta property="og:url" content="https://bluearchive-battlelog-p.com/search">
+  <meta property="og:image" content="https://bluearchive-battlelog-p.com/static/ogp.png">
+  <!-- Twitterカード -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ブルーアーカイブ対抗戦DB | 編成検索">
+  <meta name="twitter:description" content="戦術対抗戦の対戦結果を記録、検索できるデータベース。スクリーンショットから自動で結果を読み取って記録できます。">
+  <meta name="twitter:image" content="https://bluearchive-battlelog-p.com/static/ogp.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/plugins/Swap/Sortable.swap.min.js"></script>
+
+
+<link rel="stylesheet" href="/static/style_db.css">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+ </head>
+<body>
+  <!-- ▼▼ 共通ナビゲーション・ヘッダー・サイドバー ▼▼ -->
+<header>
+  <nav class="navbar-custom">
+    <a href="/" class="logo-link">
+      <span class="logo-text">BlueArchive対抗戦DB</span>
+    </a>
+    <div class="nav-links">
+      <a href="/upload" class="nav-btn">アップロード</a>
+      <a href="/search" class="nav-btn">編成検索</a>
+      <a href="/defense_suggest" class="nav-btn">防衛メーカー</a>
+    </div>
+    <button class="hamburger" id="hamburger-btn">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="sidebar-bg" id="sidebar-bg"></div>
+  <aside class="sidebar" id="sidebar">
+    <button class="close-btn" id="close-sidebar">&times;</button>
+    <a href="/upload" class="sidebar-link">アップロード</a>
+    <a href="/search" class="sidebar-link">編成検索</a>
+    <a href="/defense_suggest" class="sidebar-link">防衛編成メーカー</a>
+  </aside>
+</header>
+  <!-- ▲▲ ヘッダー・サイドバーここまで ▲▲ -->
+
+{% set show_results = request.args.get('side') is not none %}
+
+<div class="main-card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <div class="section-title">対抗戦 編成検索</div>
+    <div style="margin:0 0 0 12px;display:flex;align-items:center;">
+      <label for="seasonSelect" style="font-weight:bold; color:#337; margin-right:7px;">シーズン</label>
+      <select name="season" id="seasonSelect" class="form-select" style="width:auto;min-width:130px;display:inline-block;">
+        {% for season in SEASON_LIST %}
+          <option value="{{ season.key }}" {% if season.key == request.args.get('season', CURRENT_SEASON) %}selected{% endif %}>
+            {{ season.label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-btns">
+      <button class="tab-btn{% if not show_results or request.args.get('side') == 'attack' %} active{% endif %}" id="atkTab">攻撃側</button>
+      <button class="tab-btn{% if show_results and request.args.get('side') == 'defense' %} active{% endif %}" id="defTab">防衛側</button>
+    </div>
+    <button class="clear-all-btn" id="clearAllBtn" title="編成を全クリア">
+      <span style="font-size:1.08em;">&#128465;</span> 全クリア
+    </button>
+  </div>
+  <div style="background:#f6f9fb;border-radius:14px;padding:24px 18px;margin-bottom:8px; border:1.5px solid #d7e5f3;">
+    <div style="font-weight:bold;color:#338eda; margin-bottom:6px;">編成</div>
+    <form id="searchForm" method="get" action="/search">
+      <input type="hidden" name="side" id="sideInput" value="{{ request.args.get('side','attack') }}">
+      <input type="hidden" name="season" id="hiddenSeason" value="{{ request.args.get('season', CURRENT_SEASON) }}">
+
+      <!-- ▼▼▼ 射程・遮蔽セレクトボックス＋キャラ選択枠 ▼▼▼ -->
+<div class="defense-row-wrap">
+  <div class="condition-wrap" style="display: flex; justify-content: center; align-items: flex-start;">
+    <!-- 左ラベル -->
+    <div class="condition-side-labels" style="display: flex; flex-direction: column; justify-content: center; align-items: flex-end; margin-right: 10px;">
+      <div class="side-label">射程</div>
+      <div class="side-label">遮蔽</div>
+    </div>
+    <!-- セレクトボックス群 -->
+    <div id="conditionRow"></div>
+    <!-- 右ダミーラベル -->
+    <div class="condition-side-labels" style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; margin-left: 10px;">
+      <div class="side-label" style="visibility: hidden;">射程</div>
+      <div class="side-label" style="visibility: hidden;">遮蔽</div>
+    </div>
+  </div>
+  <div class="defense-row" id="defenseRow"></div>
+  <div class="slot-label-row" id="slotLabelRow"></div>
+</div>
+
+
+      <!-- ▲▲▲ 条件セレクトボックス＋キャラ欄 ▲▲▲ -->
+
+      <input type="hidden" name="c1" id="c1">
+      <input type="hidden" name="c2" id="c2">
+      <input type="hidden" name="c3" id="c3">
+      <input type="hidden" name="c4" id="c4">
+      <input type="hidden" name="c5" id="c5">
+      <input type="hidden" name="c6" id="c6">
+      <!-- ↓条件選択値もhiddenで送信する（ストライカーのみ） -->
+      <input type="hidden" name="r1" id="r1">
+      <input type="hidden" name="r2" id="r2">
+      <input type="hidden" name="r3" id="r3">
+      <input type="hidden" name="r4" id="r4">
+      <input type="hidden" name="s1" id="s1">
+      <input type="hidden" name="s2" id="s2">
+      <input type="hidden" name="s3" id="s3">
+      <input type="hidden" name="s4" id="s4">
+
+      <button type="submit" class="search-btn" id="searchBtn">この編成を検索</button>
+    </form>
+    <div id="infoPanelWarn" style="color:#da2222;font-size:1.08em;margin-top:8px;display:none;"></div>
+    <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:6px;">
+      <label for="sortSelect" style="font-weight:bold;margin-right:6px;">並び替え</label>
+      <select id="sortSelect" class="form-select" style="width:auto;display:inline-block;">
+        <option value="new">新着順</option>
+        <option value="rate">グッド率順</option>
+        <option value="good">グッド数順</option>
+      </select>
+  </div>
+</div>
+<!-- ▼▼▼ 直近アップロード表示（indexと同じ枠・Jinja2で） ▼▼▼ -->
+{% if show_results %}
+  <div class="search-results-section" id="searchResultsSection">
+    <div class="search-result-title">検索結果一覧</div>
+    <div id="searchResults"></div>
+  </div>
+{% endif %}
+
+{% if loser_teams is defined %}
+  <div class="recent-upload-panel" style="margin-top:28px;">
+    <div class="recent-upload-title">直近のアップロード</div>
+    <div class="recent-upload-list">
+      {% if loser_teams and loser_teams|length > 0 %}
+        {% for team in loser_teams %}
+          <div class="recent-upload-row">
+            <img class="side-icon-img" src="{{ team.side_icon }}" alt="{{ '攻撃側' if team.side == 'attack' else '防衛側' }}">
+            <img class="lose-icon-img" src="{{ team.lose_icon }}" alt="Lose">
+            <div class="char-list-img">
+              {% for ch in team.characters %}
+                {% if ch.image_url %}
+                  <img class="char-img" src="{{ ch.image_url }}" alt="{{ ch.name }}">
+                {% else %}
+                  <span class="char-img" style="background:#eee;border:1px solid #ddd;"></span>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <div class="recent-right-block">
+              <span class="recent-date">{{ team.date }}</span>
+              <a class="btn-recent-search" href="/search?side={{ team.side }}{% for i in range(6) %}&c{{i+1}}={{ team.characters[i].name|urlencode }}{% endfor %}">
+                <svg width="1.2em" height="1.2em" style="margin-right:2px;vertical-align:-2px;" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="7" cy="7" r="6" stroke="#fff" stroke-width="2"/><rect x="11" y="11" width="4" height="2" rx="1" transform="rotate(45 11 11)" fill="#fff"/></svg>
+                検索
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="color:#4678a8; padding:16px 0; text-align:center;">最近のアップロードがまだありません</div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+<!-- ▲▲▲ 直近アップロード表示ここまで ▲▲▲ -->
+
+<!-- ▼ info-panel（案内枠・フォーム下） ▼ -->
+<div class="info-panel" id="infoPanel">
+  このページでは、対抗戦の編成データを検索できます。<br><br>
+  ・枠をタップしてキャラを選択できます。<br>
+  ・キャラを削除したい場合は、枠内の「×」ボタンを押してください。<br>
+  ・キャラの並び順を変更したい場合は、枠をドラッグ＆ドロップで入れ替えできます。<br>
+  ・全クリアボタンで全ての枠をリセットできます。<br>
+  ・攻撃側・防衛側タブを切り替えて、どちらの編成でも検索できます。<br>
+  <span style="color:#da2222;font-weight:bold;">
+    ※ストライカー枠はキャラ選択と条件指定（射程・遮蔽）は同時に行えません。<br>
+    条件を選択するとキャラはリセット、キャラを選ぶと条件はリセットされます。
+  </span><br><br>
+  検索結果が表示されない場合は、条件を変えて再度お試しください。<br>
+  データは随時追加・更新されています。
+</div>
+
+<!-- キャラ選択モーダル -->
+<div class="modal-bg" id="modalBg">
+  <div class="char-modal">
+    <div class="modal-title" id="modalTitle">キャラを選択（1枠目）</div>
+    <input class="modal-search" id="modalSearch" placeholder="キャラ名で絞り込み">
+    <div class="char-list-grid" id="charListGrid"></div>
+    <div class="modal-actions">
+      <button class="modal-btn clear" id="modalClear">空に戻す</button>
+      <button class="modal-btn" id="modalCancel">キャンセル</button>
+      <button class="modal-btn ok" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer-custom">
+  ・運営/管理：作成者Twitter（<a href="https://twitter.com/BestM_JP" target="_blank" class="text-info fw-bold">@BestM_JP</a>）<br>
+  ・本サービスは個人による非公式ファンツールです<br>
+  ・<a href="/privacy.html" class="text-info fw-bold" style="text-decoration:underline;">プライバシーポリシー</a>
+  <span style="margin-left:1.4em;"></span>
+  ・<a href="/contact.html" class="text-info fw-bold" style="text-decoration:underline;">お問い合わせ</a>
+</footer>
+
+<script>
+function kataToHira(str) {
+  return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+    return String.fromCharCode(match.charCodeAt(0) - 0x60);
+  });
+}
+function getParam(key) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(key);
+}
+
+// サイドバー動作
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const sidebar = document.getElementById('sidebar');
+const sidebarBg = document.getElementById('sidebar-bg');
+const closeSidebarBtn = document.getElementById('close-sidebar');
+hamburgerBtn.addEventListener('click', function () {
+  sidebar.classList.add('active');
+  sidebarBg.style.display = 'block';
+});
+closeSidebarBtn.addEventListener('click', closeSidebar);
+sidebarBg.addEventListener('click', closeSidebar);
+function closeSidebar() {
+  sidebar.classList.remove('active');
+  sidebarBg.style.display = 'none';
+}
+
+// ▼ シーズンプルダウンの値は検索ボタンを押したときだけhiddenSeasonに反映
+document.getElementById('searchForm').addEventListener('submit', function() {
+  document.getElementById('hiddenSeason').value = document.getElementById('seasonSelect').value;
+});
+
+// ▼ 射程・遮蔽オプション
+const rangeOptions = [
+  {value: "", label: "ー"},
+  {value: "350", label: "350"},
+  {value: "450", label: "450"},
+  {value: "550", label: "550"},
+  {value: "650", label: "650"},
+  {value: "750", label: "750"},
+  {value: "850", label: "850"},
+];
+const coverOptions = [
+  {value: "", label: "ー"},
+  {value: "1", label: "有"},
+  {value: "0", label: "無"},
+];
+
+// ▼ グローバル状態
+const strikerList = {{ striker_list | tojson }};
+const specialList = {{ special_list | tojson }};
+const atkLabels = ["A1", "A2", "A3", "A4", "ASP1", "ASP2"];
+const defLabels = ["D1", "D2", "D3", "D4", "DSP1", "DSP2"];
+let atkOrDef = getParam("side") === "defense" ? "防衛" : "攻撃";
+let defenseTeam = [null, null, null, null, null, null];
+let conditionRows = [
+  {range: "", cover: ""}, {range: "", cover: ""}, {range: "", cover: ""}, {range: "", cover: ""}
+];
+let currSlot = null;
+
+// ▼ 条件欄＋キャラ欄の描画
+function renderConditionRow() {
+  const row = document.getElementById("conditionRow");
+  row.innerHTML = "";
+row.className = "condition-row";  // ←★ここ追加！
+  for (let i = 0; i < 6; i++) {
+    const div = document.createElement("div");
+    div.className = "condition-cell";
+    if (i < 4) {
+      // ストライカーのみ射程・遮蔽セレクト
+      // 射程
+      const selR = document.createElement("select");
+      selR.className = "form-select";
+      selR.style.width = "76px";
+      selR.style.marginBottom = "4px";
+      rangeOptions.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt.value;
+        o.text = opt.label;
+        selR.appendChild(o);
+      });
+      selR.value = conditionRows[i].range;
+      selR.onchange = function() {
+        if (defenseTeam[i]) {
+          defenseTeam[i] = null;
+          renderDefenseRow();
+        }
+        conditionRows[i].range = this.value;
+        document.getElementById(`r${i+1}`).value = this.value;
+      };
+      div.appendChild(selR);
+      // 遮蔽
+      const selS = document.createElement("select");
+      selS.className = "form-select";
+      selS.style.width = "76px";
+      coverOptions.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt.value;
+        o.text = opt.label;
+        selS.appendChild(o);
+      });
+      selS.value = conditionRows[i].cover;
+      selS.onchange = function() {
+        if (defenseTeam[i]) {
+          defenseTeam[i] = null;
+          renderDefenseRow();
+        }
+        conditionRows[i].cover = this.value;
+        document.getElementById(`s${i+1}`).value = this.value;
+      };
+      div.appendChild(selS);
+    }
+    // 5,6枠目は空div（高さだけ合わせる）
+    row.appendChild(div);
+  }
+}
+
+
+function renderDefenseRow() {
+  const row = document.getElementById("defenseRow");
+  row.innerHTML = "";
+  defenseTeam.forEach((ch, idx) => {
+    const slot = document.createElement("div");
+    slot.className = "def-slot";
+    slot.setAttribute('data-index', idx);
+    slot.onclick = () => openModal(idx);
+    if (ch) {
+      slot.innerHTML = `<img src="${ch.image}" alt="${ch.name}"><button class="remove-icon" onclick="removeChar(event,${idx})">&times;</button>`;
+    } else {
+      slot.innerHTML = `<span class="empty-text" style="opacity:0.6;">EMPTY</span>`;
+    }
+    row.appendChild(slot);
+  });
+
+  // 並びラベル
+  const labelRow = document.getElementById("slotLabelRow");
+  labelRow.innerHTML = "";
+  const slotLabels = atkOrDef === "攻撃" ? atkLabels : defLabels;
+  slotLabels.forEach(label => {
+    const div = document.createElement("div");
+    div.className = "slot-label";
+    div.textContent = label;
+    labelRow.appendChild(div);
+  });
+
+  if (!row.sortableInitialized) {
+    new Sortable(row, {
+      animation: 180,
+      ghostClass: "dragging",
+      chosenClass: "dragging",
+      swap: true,
+      swapClass: "highlight-swap",
+      delay: 180,
+      delayOnTouchOnly: true,
+      onEnd: function (evt) {
+        const oldIndex = evt.oldIndex;
+        const newIndex = evt.newIndex;
+        if (oldIndex === newIndex) return;
+        const temp = defenseTeam[oldIndex];
+        defenseTeam[oldIndex] = defenseTeam[newIndex];
+        defenseTeam[newIndex] = temp;
+        renderDefenseRow();
+      }
+    });
+    row.sortableInitialized = true;
+  }
+}
+
+window.removeChar = function(e, idx) {
+  e.stopPropagation();
+  defenseTeam[idx] = null;
+  renderDefenseRow();
+};
+document.getElementById("clearAllBtn").onclick = function(e) {
+  e.preventDefault();
+  defenseTeam = [null, null, null, null, null, null];
+  renderDefenseRow();
+  // 条件もリセット
+  for (let i = 0; i < 4; i++) {
+    conditionRows[i] = {range:"", cover:""};
+    document.getElementById(`r${i+1}`).value = "";
+    document.getElementById(`s${i+1}`).value = "";
+  }
+  renderConditionRow();
+};
+
+document.getElementById("atkTab").onclick = () => {
+  atkOrDef = "攻撃";
+  document.getElementById("atkTab").classList.add("active");
+  document.getElementById("defTab").classList.remove("active");
+  renderDefenseRow();
+  renderConditionRow();
+};
+document.getElementById("defTab").onclick = () => {
+  atkOrDef = "防衛";
+  document.getElementById("defTab").classList.add("active");
+  document.getElementById("atkTab").classList.remove("active");
+  renderDefenseRow();
+  renderConditionRow();
+};
+
+document.getElementById("searchForm").onsubmit = function(e) {
+  // キャラ名
+  for (let i = 0; i < 6; i++) {
+    document.getElementById("c" + (i+1)).value = defenseTeam[i] ? defenseTeam[i].name : "";
+  }
+  document.getElementById("sideInput").value = (atkOrDef === "攻撃" ? "attack" : "defense");
+  // 射程/遮蔽
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`r${i+1}`).value = conditionRows[i].range;
+    document.getElementById(`s${i+1}`).value = conditionRows[i].cover;
+  }
+  // ▼排他チェック：キャラと条件の同時指定不可
+  let warn = false;
+  for (let i = 0; i < 4; i++) {
+    if (defenseTeam[i] && (conditionRows[i].range || conditionRows[i].cover)) {
+      warn = true;
+    }
+  }
+  if (warn) {
+    document.getElementById("infoPanelWarn").innerText = "キャラ欄と条件指定は同時に行えません。いずれかをリセットしてください。";
+    document.getElementById("infoPanelWarn").style.display = "block";
+    e.preventDefault();
+    return false;
+  }
+  document.getElementById("infoPanelWarn").style.display = "none";
+};
+
+function initFromParams() {
+  const params = new URLSearchParams(window.location.search);
+  atkOrDef = params.get("side") === "defense" ? "防衛" : "攻撃";
+  let charParams = [];
+  for (let i = 1; i <= 6; i++) {
+    charParams.push(params.get("c" + i) || "");
+  }
+  [0,1,2,3,4,5].forEach(idx => {
+    let name = charParams[idx];
+    if (!name) { defenseTeam[idx] = null; return; }
+    let pool = idx <= 3 ? strikerList : specialList;
+    let found = pool.find(c => c.name === name);
+    defenseTeam[idx] = found || null;
+  });
+  // 射程・遮蔽条件
+  for (let i = 0; i < 4; i++) {
+    conditionRows[i].range = params.get("r"+(i+1)) || "";
+    conditionRows[i].cover = params.get("s"+(i+1)) || "";
+    document.getElementById(`r${i+1}`).value = conditionRows[i].range;
+    document.getElementById(`s${i+1}`).value = conditionRows[i].cover;
+  }
+}
+
+window.onload = () => {
+  initFromParams();
+  renderConditionRow();
+  renderDefenseRow();
+  document.getElementById("atkTab").classList.toggle("active", atkOrDef === "攻撃");
+  document.getElementById("defTab").classList.toggle("active", atkOrDef === "防衛");
+
+  // シーズンプルダウン値をGETパラメータまたはCURRENT_SEASONで初期化
+  const seasonValue = getParam('season') || "{{ CURRENT_SEASON }}";
+  document.getElementById('seasonSelect').value = seasonValue;
+  document.getElementById('hiddenSeason').value = seasonValue;
+
+  {% if show_results %}
+    const infoPanel = document.getElementById('infoPanel');
+    const footer = document.querySelector('.footer-custom');
+    if (infoPanel && footer) {
+      footer.parentNode.insertBefore(infoPanel, footer);
+      infoPanel.style.marginTop = "38px";
+    }
+    doSearchFromParams();
+  {% endif %}
+};
+
+const modalBg = document.getElementById("modalBg");
+let selectedChar = null;
+let lastSelectedCharName = null;
+let lastSelectedTime = 0;
+function openModal(idx) {
+  currSlot = idx;
+  document.getElementById("modalTitle").innerText = `キャラを選択（${idx+1}枠目）`;
+  document.getElementById("modalSearch").value = "";
+  selectedChar = defenseTeam[idx];
+  lastSelectedCharName = selectedChar ? selectedChar.name : null;
+  lastSelectedTime = 0;
+  renderCharList();
+  modalBg.classList.add("active");
+}
+function closeModal() {
+  modalBg.classList.remove("active");
+  selectedChar = null;
+}
+function renderCharList() {
+  const grid = document.getElementById("charListGrid");
+  const filter = document.getElementById("modalSearch").value.trim();
+  grid.innerHTML = "";
+  let candidates;
+  if (currSlot <= 3) {
+    candidates = strikerList;
+  } else {
+    candidates = specialList;
+  }
+  const filterText = kataToHira(filter);
+  candidates
+    .filter(c => {
+      // 現在選択中のキャラは除外せずに候補に出す（自分のスロットだけ除外）
+      if (selectedChar && selectedChar.name === c.name) return true;
+      return !defenseTeam.some((ch, idx) => ch && ch.name === c.name && idx !== currSlot);
+    })
+    .filter(c => kataToHira(c.name).includes(filterText))
+    .forEach(c => {
+      const div = document.createElement("div");
+      div.className = "char-item" + (selectedChar && selectedChar.name === c.name ? " selected" : "");
+      div.innerHTML = `<img class="char-img" src="${c.image}" alt="${c.name}">`;
+      div.onclick = () => {
+        if (selectedChar && selectedChar.name === c.name) {
+          defenseTeam[currSlot] = c;
+          // 条件リセット（排他）
+          if (currSlot <= 3) {
+            conditionRows[currSlot] = {range:"", cover:""};
+            document.getElementById(`r${currSlot+1}`).value = "";
+            document.getElementById(`s${currSlot+1}`).value = "";
+          }
+          closeModal();
+          renderDefenseRow();
+          renderConditionRow();
+        } else {
+          selectedChar = c;
+          lastSelectedCharName = c.name;
+          lastSelectedTime = Date.now();
+          renderCharList();
+        }
+      };
+      grid.appendChild(div);
+    });
+}
+
+document.getElementById("modalSearch").oninput = renderCharList;
+document.getElementById("modalOk").onclick = () => {
+  defenseTeam[currSlot] = selectedChar;
+  // 条件リセット（排他）
+  if (currSlot <= 3) {
+    conditionRows[currSlot] = {range:"", cover:""};
+    document.getElementById(`r${currSlot+1}`).value = "";
+    document.getElementById(`s${currSlot+1}`).value = "";
+  }
+  closeModal();
+  renderDefenseRow();
+  renderConditionRow();
+};
+document.getElementById("modalCancel").onclick = () => closeModal();
+document.getElementById("modalClear").onclick = () => {
+  defenseTeam[currSlot] = null;
+  closeModal();
+  renderDefenseRow();
+};
+
+// ▼ 条件・キャラ両方空なら検索なし、片方でも指定あればAPI検索
+async function doSearchFromParams() {
+  const side = getParam("side") === "defense" ? "defense" : "attack";
+  const charNames = [];
+  const ranges = [];
+  const covers = [];
+  for (let i = 1; i <= 6; i++) {
+    charNames.push(getParam("c" + i) || "");
+    if (i <= 4) {
+      ranges.push(getParam("r" + i) || "");
+      covers.push(getParam("s" + i) || "");
+    }
+  }
+  const season = getParam("season") || "{{ CURRENT_SEASON }}";
+  // キャラ欄も条件欄も空なら該当なし
+  if (
+    charNames.filter(x => !!x).length === 0 &&
+    ranges.filter(x => !!x).length === 0 &&
+    covers.filter(x => !!x).length === 0
+  ) {
+    document.getElementById("searchResults").innerHTML = "<div style='color:#888;font-size:1.08em;padding:28px 0;'>該当データが存在しません</div>";
+    return;
+  }
+  const res = await fetch("/api/search", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      side: side,
+      characters: charNames,
+      ranges: ranges,
+      covers: covers,
+      season: season
+    })
+  });
+  const data = await res.json();
+  showSearchResults(data.results || []);
+}
+
+function showSearchResults(results) {
+  const section = document.getElementById("searchResultsSection");
+  const container = document.getElementById("searchResults");
+  section.style.display = "block";
+  container.innerHTML = "";
+
+  if (!results || results.length === 0) {
+    container.innerHTML = "<div style='color:#888;font-size:1.08em;padding:28px 0;'>該当データが存在しません</div>";
+    return;
+  }
+
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  results.forEach(res => {
+    const row_id = res.row_id || res.ID || res.id;
+    const good_count = parseInt(res.good_count ?? res.GOOD ?? 0);
+    const bad_count = parseInt(res.bad_count ?? res.BAD ?? 0);
+
+    const winnerSideIcon = res.winner_icon ? `<img class="side-icon" src="${res.winner_icon}" alt="side">` : "";
+    const winnerWinloseIcon = res.winner_winlose_icon ? `<img class="winlose-icon" src="${res.winner_winlose_icon}" alt="勝敗">` : "";
+    const loserSideIcon  = res.loser_icon ? `<img class="side-icon" src="${res.loser_icon}" alt="side">` : "";
+    const loserWinloseIcon  = res.loser_winlose_icon ? `<img class="winlose-icon" src="${res.loser_winlose_icon}" alt="勝敗">` : "";
+    const winnerChars = res.winner_characters?.map(name => charImageTag(name)).join('') || "";
+    const loserChars  = res.loser_characters?.map(name => charImageTag(name)).join('') || "";
+    const dateTag = res.date ? `<div class="result-date">${res.date}</div>` : "";
+
+    // ▼ 投票ボタンUI
+    const voteSection = `
+      <div class="vote-section">
+        <button class="vote-btn" data-row-id="${row_id}" data-type="good" id="btn_good_${row_id}">
+          <span class="material-symbols-outlined vote-icon good-icon">thumb_up</span>
+        </button>
+        <span class="vote-count" id="count_good_${row_id}">${good_count}</span>
+        <button class="vote-btn" data-row-id="${row_id}" data-type="bad" id="btn_bad_${row_id}">
+          <span class="material-symbols-outlined vote-icon bad-icon">thumb_down</span>
+        </button>
+        <span class="vote-count" id="count_bad_${row_id}">${bad_count}</span>
+      </div>
+    `;
+
+    // ▼ 行にdata属性（ソート用）
+    if (isMobile) {
+      // スマホは従来通り右下にvoteSection（必要ならここも調整可能）
+      container.innerHTML += `
+        <div class="result-row" data-row-id="${row_id}" data-good="${good_count}" data-bad="${bad_count}">
+          <div class="team-block">
+            ${winnerSideIcon}${winnerWinloseIcon}
+            <div class="char-row left-row">${winnerChars}</div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-mark">VS</div>
+          </div>
+          <div class="team-block">
+            ${loserSideIcon}${loserWinloseIcon}
+            <div class="char-row right-row">${loserChars}</div>
+          </div>
+          ${dateTag}
+          ${voteSection}
+        </div>
+      `;
+    } else {
+      // PCは「左編成の下」にvoteSection、「右下」にdateTag
+      container.innerHTML += `
+        <div class="result-row" data-row-id="${row_id}" data-good="${good_count}" data-bad="${bad_count}">
+          <div class="side-col left-col">
+            <div class="side-main">
+              ${winnerSideIcon}${winnerWinloseIcon}
+              <div class="char-row left-row">${winnerChars}</div>
+            </div>
+            <div class="left-bottom">${voteSection}</div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-mark">VS</div>
+            <div class="vs-dummy"></div>
+          </div>
+          <div class="side-col right-col">
+            <div class="right-main-center">
+              <div class="right-block">
+                ${loserSideIcon}${loserWinloseIcon}
+                <div class="char-row right-row">${loserChars}</div>
+              </div>
+            </div>
+            ${dateTag}
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  // ▼ 投票UIとソート機能の初期化
+  if (window.renderVoteButtons) renderVoteButtons();
+  if (window.setupVoteHandlers) setupVoteHandlers();
+  if (window.setupSortHandlers) setupSortHandlers();
+}
+
+function charImageTag(name) {
+  if (!name) return `<span style="width:39px;height:39px;display:inline-block;"></span>`;
+  let all = strikerList.concat(specialList);
+  let found = all.find(c => c.name === name);
+  if (found && found.image) {
+    return `<img class="char-img" src="${found.image}" alt="${name}">`;
+  } else {
+    return `<span class="char-img" style="background:#eee;border:1px solid #ddd;"></span>`;
+  }
+}
+
+</script>
+
+<script src="/static/db.js"></script>
+
+
+</body>
+</html>

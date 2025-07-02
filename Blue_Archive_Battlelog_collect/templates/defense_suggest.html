@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <title>おすすめ防衛編成メーカー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/plugins/Swap/Sortable.swap.min.js"></script>
+<style>
+body {
+  background: linear-gradient(135deg, #e4f2fd 0%, #f7fafd 100%);
+  min-height: 100vh;
+  font-family: "Segoe UI", "ヒラギノ角ゴ ProN", "Meiryo", sans-serif;
+  margin: 0;
+}
+.main-card {
+  max-width: 1100px;
+  margin: 48px auto 32px auto;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(180,80,160,0.09);
+  padding: 36px 24px 24px 24px;
+  position: relative;
+}
+.title-label {
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #338eda;
+  padding-bottom: 6px;
+}
+.input-section-card {
+  background: #f7fafd;
+  border-radius: 16px;
+  box-shadow: 0 2px 14px #bce0fa1a;
+  border: 2.3px solid #d3ecfa;
+  padding: 26px 18px 22px 18px;
+  margin-bottom: 30px;
+}
+.attack-group {
+  margin-bottom: 18px;
+  position: relative;
+  padding-bottom: 16px;
+}
+.attack-group:not(:last-child)::after {
+  content: "";
+  display: block;
+  width: 92%;
+  margin: 18px auto 0 auto;
+  border-bottom: 1.5px dashed #338eda;
+  opacity: 0.6;
+}
+.attack-group-label {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #268bb8;
+  margin-bottom: 7px;
+}
+.attack-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 0px;
+  justify-content: center;
+  flex-wrap: nowrap;
+}
+.attack-slot {
+  width: 68px; height: 68px; background: #e9f4fb; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  color: #b3b8be; font-size: 1.07em; font-weight: bold;
+  cursor: pointer; position: relative; box-shadow: 0 1px 4px #bce0fa22;
+  border: 2.3px solid #bce0fa; transition: box-shadow .13s, border .12s, background .13s;
+  flex-direction: column;
+  min-width: 0;
+}
+.attack-slot img { width: 56px; height: 56px; border-radius: 11px; object-fit: cover; }
+.attack-slot .remove-icon {
+  position: absolute; top: 3px; right: 6px; background: #fff; color: #ea5555; border-radius: 50%;
+  width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.95em; cursor: pointer; box-shadow: 0 1px 6px #8882; border: none; z-index: 2;
+}
+.attack-slot .empty-text {
+  display: inline-block;
+  font-size: 1.13em;
+  font-weight: 900;
+  opacity: 1;
+  color: #e3e5ea; /* db.html風: やや白め */
+  letter-spacing: 0.03em;
+}
+@media (max-width: 900px) {
+  .attack-slot .empty-text {
+    font-size: 0.65em;
+  }
+}
+
+.slot-label-row {
+  display: flex; gap: 14px; justify-content: center; margin-top: 3px; margin-bottom: 7px;
+  flex-wrap: nowrap;
+}
+.slot-label {
+  width: 68px;
+  text-align: center;
+  font-size: 1em;
+  color: #2196f3;
+  font-weight: bold;
+  letter-spacing: 0.06em;
+  user-select: none;
+  padding-bottom: 2px;
+}
+.clear-all-btn {
+  background: #e6f2fc; color: #2196f3; border: 1.6px solid #bce0fa; border-radius: 11px;
+  font-size: 1em; font-weight: bold; padding: 4px 16px 4px 10px; margin-bottom: 7px; margin-left:0; box-shadow: 0 1px 6px #bce0fa12; transition: background .15s, color .13s, border-color .13s;
+  display: flex; align-items: center; gap: 7px;
+}
+.clear-all-btn:hover, .clear-all-btn:active {
+  background: #b3d9f7;
+  color: #d23c3c;
+  border-color: #2196f3;
+}
+.clear-all-btn svg { color: #2196f3; transition: color .13s; }
+.clear-all-btn:hover svg { color: #d23c3c; }
+.fw-bold { font-weight: bold; }
+.mb-2 { margin-bottom: 0.7em !important; }
+.mb-3 { margin-bottom: 1.1em !important; }
+.mb-4 { margin-bottom: 2em !important; }
+
+/* --- おすすめ防衛編成パーツ --- */
+.defense-best5-list { width: 100%; }
+.defense-best5-row-grid {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0px;
+}
+.defense-best5-row-grid.label { margin-bottom: 22px; }
+.rank-col { display: flex; justify-content: center; align-items: center; }
+.icon-col { display: flex; justify-content: center; }
+.defense-best5-rank {
+  width: 54px;
+  height: 54px;
+  background: #338eda;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 50%;
+  font-size: 1.45em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px #bce0fa35;
+  margin-right: 6px;
+}
+.defense-best5-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.defense-best5-icon {
+  width: 54px;
+  height: 54px;
+  background: #e9f4fb;
+  border-radius: 10px;
+  border: 2.1px solid #bce0fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.defense-best5-icon img {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #fff;
+}
+.defense-best5-label-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.defense-best5-label {
+  width: 54px;
+  text-align: center;
+  font-size: 1em;
+  color: #b3b8be;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+/* ▼▼▼ スマホ対応 強化 @media ▼▼▼ */
+@media (max-width: 900px) {
+  .main-card { max-width: 99vw; padding: 8px 2vw; }
+  .input-section-card { padding: 9px 3vw 8px 3vw; }
+  .attack-row, .slot-label-row, .defense-best5-row, .defense-best5-label-row {
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .attack-slot, .slot-label, .defense-best5-icon, .defense-best5-label {
+    width: 37px;
+    height: 37px;
+    font-size: 0.7em;
+    min-width: 27px;
+    min-height: 27px;
+    max-width: 99vw;
+  }
+  .attack-slot img, .defense-best5-icon img { width: 26px; height: 26px; }
+  .defense-best5-empty { width: 21px; height: 21px; }
+  .defense-best5-row-wrap {
+    padding-left: 40px;
+    min-width: 0;
+    max-width: 100vw;
+  }
+  .rank-badge, .ref-badge {
+    width: 36px; height: 36px; font-size: 1em; left: -32px;
+    top: 6px;
+  }
+  .ref-badge { left: -55px; font-size: 0.72em; top: 9px; }
+  .defense-best5-icons-row, .defense-best5-label-row {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .defense-best5-icon, .defense-best5-label {
+    width: 27px; height: 27px; font-size: 0.65em;
+  }
+  .defense-best5-icon img { width: 17px; height: 17px; }
+  .usage-guide-box {
+    padding: 10px 8px 6px 8px;
+    font-size: 0.95em;
+  }
+  .char-modal { padding: 7px 3vw 7px 3vw; min-width: unset; }
+  .char-list-grid { gap: 3px; }
+  .modal-title { font-size: 1em; }
+  .modal-search { font-size: 0.95em; }
+  .result-card table,
+  .result-card .table {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+  }
+}
+
+/* サジェスト結果・テーブル */
+.result-card { margin-top: 28px; background: #f2fafd; border-radius: 12px; padding: 22px; box-shadow: 0 2px 8px #bce0fa25; }
+.section-title { font-size: 1.12em; font-weight: bold; color: #26a1b8; margin-bottom: 8px; }
+.table th, .table td { vertical-align: middle !important; }
+.table th { background: #f6f7fa; }
+.table tr:nth-child(1) td { background: #f9e8ef !important; }
+.table tr:nth-child(2) td { background: #f4fafd !important; }
+.table tr:nth-child(3) td { background: #e8f8f2 !important; }
+.table tr:nth-child(4) td { background: #fefaf2 !important; }
+.table tr:nth-child(5) td { background: #f7f8fc !important; }
+.char-box { display: inline-block; background: #f7ecff; color: #6a2dab; border-radius: 7px; padding: 3px 8px; margin-right: 5px; font-size: 0.97em; }
+.tag-box { display: inline-block; background: #e3f6fd; color: #1080a3; font-weight: 600; border-radius: 7px; padding: 3px 8px; margin-right: 5px; font-size: 0.96em; }
+.ref-cell { color: #e38133; font-size: 0.96em; font-weight: bold; }
+.no-result { color: #c02c2c; font-weight: bold; margin: 24px 0; font-size: 1.08em; }
+.tpl-preview-area { margin: 24px 0 12px 0; }
+.tpl-preview-title { font-size: 1.13em; color: #5e42b2; font-weight: bold; margin-bottom: 8px; }
+/* キャラ選択モーダル */
+.modal-bg {
+  display: none; position: fixed; left:0; top:0; width:100vw; height:100vh; background: rgba(30,60,90,0.22);
+  z-index: 9999; align-items: center; justify-content: center;
+}
+.modal-bg.active { display: flex !important;}
+.char-modal {
+  background: #fff; border-radius: 16px; max-width: 660px; width: 95vw; padding: 22px 24px 14px 24px; box-shadow: 0 4px 28px #bce0fa2a; animation: modalpop .22s; min-height: 260px; position: relative; z-index: 10000;}
+@keyframes modalpop { 0% { transform: scale(0.98); opacity:0; } 100% { transform: scale(1); opacity:1; } }
+.modal-title { font-weight: bold; color: #38a2d7; margin-bottom: 10px; font-size: 1.12em; text-align: left; }
+.modal-search { width: 100%; margin-bottom: 10px; font-size: 1.03em; padding: 6px 10px; border-radius: 7px; border:1.3px solid #bce0fa; }
+.char-list-grid { display: flex; flex-wrap: wrap; gap: 7px; max-height: 260px; overflow-y: auto; margin-bottom: 10px; }
+.char-item { width: 42px; height: 42px; border-radius: 8px; border: 2px solid #bce0fa; background: #e3f6fd; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border .11s; position: relative; }
+.char-item.selected { border: 2.4px solid #ffcf32; box-shadow: 0 0 8px #ffe68080; }
+.char-item img { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 2px; }
+.modal-btn { background: #e3f6fd; color: #38a2d7; border: none; border-radius: 7px; font-weight: bold; padding: 6px 16px; font-size: 1em; transition: background .13s, color .13s; margin-top: 3px;}
+.modal-btn.ok { background: #38a2d7; color: #fff; }
+.modal-btn.clear { color: #ea5555; border: 1.3px solid #ea5555; background: #fff; }
+.highlight-swap { box-shadow: 0 0 10px #ffee80, 0 0 3px #ffdf32; background: #fff7d6 !important; }
+
+.defense-best5-row-wrap {
+  position: relative;
+  width: max-content;
+  margin: 0 auto 22px auto;
+  padding-left: 90px;
+  text-align: center;
+}
+.rank-badge {
+  position: absolute;
+  left: 0;
+  top: 0px;
+  width: 56px;
+  height: 56px;
+  background: #3393d1;
+  color: #fff;
+  font-size: 2em;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 2px 10px #bce0fa25;
+  z-index: 2;
+  letter-spacing: 0.03em;
+  transition: box-shadow .15s;
+}
+.rank-badge:hover { box-shadow: 0 4px 16px #338eda55; }
+
+.defense-best5-icons-row {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 3px;
+}
+.defense-best5-label-row {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 3px;
+}
+.defense-best5-icon {
+  width: 54px; height: 54px; background: #e9f4fb;
+  border-radius: 10px; border: 2.1px solid #bce0fa;
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+}
+.defense-best5-icon img {
+  width: 42px; height: 42px; border-radius: 8px; object-fit: cover; background: #fff;
+}
+.defense-best5-empty {
+  width: 42px; height: 42px; border-radius: 8px; background: #e3e5ea; display: block;
+}
+.defense-best5-label {
+  width: 54px;
+  text-align: center;
+  font-size: 0.93em;
+  color: #b3b8be;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+.ref-badge {
+  position: absolute;
+  left: -80px;
+  top: 12px;
+  background: #ffd200;
+  color: #555;
+  font-size: 0.93em;
+  font-weight: bold;
+  border-radius: 7px;
+  padding: 2.5px 11px 2.5px 11px;
+  box-shadow: 0 2px 6px #eed60021;
+  letter-spacing: 0.12em;
+  z-index: 2;
+  border: 1.2px solid #ffea88;
+}
+.collapse-toggle-btn {
+  background: #e6f2fc;
+  color: #338eda;
+  border: 1.6px solid #bce0fa;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 1.04em;
+  font-weight: bold;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: background .14s, color .13s;
+}
+.collapse-toggle-btn:hover {
+  background: #b3d9f7;
+  color: #268bb8;
+}
+.collapse-content {
+  margin-bottom: 24px;
+}
+.usage-guide-box {
+  background: #f8fafd;
+  border: 2px solid #bce0fa;
+  border-radius: 14px;
+  padding: 18px 22px 13px 22px;
+  margin-bottom: 26px;
+  font-size: 1.08em;
+  color: #474f57;
+  box-shadow: 0 1px 8px #bce0fa22;
+}
+.navbar-custom {
+  position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+  background: #eb6b92;
+  box-shadow: 0 2px 10px #acd8fa20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 34px 0 16px; min-height: 62px;
+}
+.logo-link { display: flex; align-items: center; height: 56px; text-decoration: none; }
+.logo-text { font-size: 2.1em; font-weight: 800; color: #fff; letter-spacing: 0.06em; line-height: 1.05; user-select: none; transition: color .15s;}
+.logo-link:hover .logo-text { color: #d73770; }
+.nav-links { display: flex; gap: 18px;}
+.nav-btn {
+  color: #fff;
+  background: transparent;
+  border: 2px solid #fff;
+  border-radius: 9px;
+  padding: 8px 28px;
+  font-size: 1.11em;
+  font-weight: bold;
+  text-decoration: none;
+  margin-left: 10px;
+  transition: background .16s, color .13s, border-color .16s;
+  box-shadow: 0 1px 6px #338eda10;
+}
+.nav-btn:hover {
+  background: #f170a7;
+  color: #fff;
+  border-color: #f170a7;
+}
+.hamburger { display: none; flex-direction: column; justify-content: center; align-items: center; width: 42px; height: 42px; background: none; border: none; cursor: pointer; margin-left: 18px; z-index: 120;}
+.hamburger span { width: 28px; height: 4px; margin: 3px 0; background: #fff; border-radius: 2px; display: block; transition: all .2s;}
+.sidebar-bg { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(30,60,90,0.18); z-index: 101;}
+.sidebar { display: flex; flex-direction: column; position: fixed; top: 0; right: -270px; width: 270px; height: 100vh; background: #fff; box-shadow: -2px 0 22px #338eda1a; padding: 22px 24px 0 24px; z-index: 102; transition: right .23s cubic-bezier(.7,.1,.37,1.3);}
+.sidebar.active { right: 0; }
+.sidebar-link { color: #f170a7; text-decoration: none; font-size: 1.13em; padding: 16px 0; border-bottom: 1px solid #eef2f7; font-weight: bold; display: block; transition: color .13s;}
+.sidebar-link:last-child { border-bottom: none; }
+.sidebar-link:hover { color: #eb6b92; }
+.close-btn { background: none; border: none; font-size: 2em; color: #888; position: absolute; top: 10px; right: 18px; cursor: pointer; }
+@media (max-width: 1000px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .navbar-custom { padding: 0 11px 0 7px; }
+  .logo-text { font-size: 1.48em; }
+}
+.footer-custom {
+  background:rgba(250,250,250,0.94);
+  margin-top: 48px;
+  border-radius: 0 0 14px 14px;
+  text-align:center;
+  font-size:0.99em;
+  color:#444;
+  padding: 18px 4px 16px 4px;
+}
+
+@media (max-width: 900px) {
+  .main-title-mobile {
+    margin-top: 30px;
+  }
+}
+
+@media (max-width: 600px) {
+  .defense-best5-row-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 0;
+  }
+
+  .defense-best5-icons-row,
+  .defense-best5-label-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .rank-badge {
+    position: static;
+    margin-bottom: 6px;
+  }
+
+  .ref-badge {
+    position: static;
+    margin-bottom: 6px;
+  }
+}
+@media (max-width: 600px) {
+  .ref-badge {
+    display: inline-block;
+    position: static !important;
+    margin: 0 auto 6px auto !important;
+    width: auto !important;
+    min-width: 48px;
+    padding: 4px 16px !important;
+    font-size: 1em;
+    letter-spacing: 0.08em;
+    border-radius: 8px;
+    text-align: center;
+    writing-mode: horizontal-tb !important;  /* 横書きに */
+    transform: none !important;
+    box-sizing: border-box;
+  }
+}
+
+
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="navbar-custom">
+    <a href="{{ url_for('limited.index') }}" class="logo-link">
+      <span class="logo-text">BlueArchive対抗戦DB</span>
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('limited.upload') }}" class="nav-btn">アップロード</a>
+      <a href="{{ url_for('limited.search') }}" class="nav-btn">編成検索</a>
+      <a href="{{ url_for('limited.defense_suggest') }}" class="nav-btn">防衛メーカー</a>
+    </div>
+    <button class="hamburger" id="hamburger-btn">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="sidebar-bg" id="sidebar-bg"></div>
+  <aside class="sidebar" id="sidebar">
+    <button class="close-btn" id="close-sidebar">&times;</button>
+    <a href="{{ url_for('limited.upload') }}" class="sidebar-link">アップロード</a>
+    <a href="{{ url_for('limited.search') }}" class="sidebar-link">編成検索</a>
+    <a href="{{ url_for('limited.defense_suggest') }}" class="sidebar-link">防衛編成メーカー</a>
+  </aside>
+</header>
+
+<div class="main-card">
+  <div class="title-label main-title-mobile mb-3">おすすめ防衛編成メーカー</div>
+  <form method="POST" autocomplete="off" id="suggestForm">
+    <div class="input-section-card">
+      <div class="mb-3">
+        <label>シーズン選択：</label>
+        <select name="season" class="form-select" style="max-width: 210px; display: inline-block;">
+          {% for season in SEASON_LIST %}
+            <option value="{{season.key}}" {% if season.key==CURRENT_SEASON %}selected{% endif %}>{{season.label}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-2 fw-bold">攻撃編成（最大5件まで）</div>
+      <button type="button" class="clear-all-btn" id="clearAllBtn">
+        <svg width="1.2em" height="1.2em" viewBox="0 0 24 24" fill="none">
+          <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M8 6v-1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2"/>
+          <rect x="5" y="6" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+          <path d="M10 11v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M14 11v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        全クリア
+      </button>
+      <div id="attack-teams-wrap">
+        {% for i in range(5) %}
+          <div class="attack-group" data-group="{{i}}">
+            <div class="attack-group-label">攻撃編成 {{i+1}}</div>
+            <div class="attack-row" data-row="{{i}}">
+              {% for j in range(6) %}
+                <div class="attack-slot" data-row="{{i}}" data-col="{{j}}" onclick="openAttackModal({{i}},{{j}})">
+                  {% set ch = attack_teams[i][j] if attack_teams is defined and attack_teams[i][j] is not none else None %}
+                  {% if ch and ch.image %}
+                    <img src="{{ ch.image }}" alt="{{ ch.name }}">
+                    <button class="remove-icon" onclick="removeAttackChar(event,{{i}},{{j}})">&times;</button>
+                  {% else %}
+                    <span class="empty-text">EMPTY</span>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+            <div class="slot-label-row">
+              {% for j in range(6) %}
+                <div class="slot-label">{{ ["A1","A2","A3","A4","ASP1","ASP2"][j] }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% for i in range(5) %}
+        {% for j in range(6) %}
+          <input type="hidden" name="attack_{{i}}_{{j}}" id="attack_{{i}}_{{j}}">
+        {% endfor %}
+      {% endfor %}
+      <div class="mb-3">
+        <label class="form-check-label" for="strict_pos_chk">
+          <input type="checkbox" class="form-check-input" id="strict_pos_chk" name="strict_pos"
+            {% if strict_pos %}checked{% endif %}>
+          配置まで完全一致で検索
+        </label>
+        <div class="small text-muted ms-4">
+          ※チェックなし：指定生徒が入っていれば配置不問で検索
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary px-4">防衛編成を作成</button>
+      {% if message %}
+        <div class="mt-3 text-danger">{{message}}</div>
+      {% endif %}
+    </div>
+  </form>
+{% if result["上位テンプレ詳細"] %}
+  <div class="input-section-card" style="margin-bottom:22px;">
+    <div class="mb-2 fw-bold" style="color:#268bb8;">おすすめ防衛編成（上位5件）</div>
+    <div class="defense-best5-list">
+      {% for tpl in result["上位テンプレ詳細"] %}
+        <div class="defense-best5-row-wrap" style="position:relative; width:max-content; margin:0 auto;">
+          {# ▼参考バッジ判定を正確化：D1~D4, SP案の参考のみ判定 #}
+          {% set core_chars = tpl["ピックキャラ"] | selectattr("枠", "in", ["D1", "D2", "D3", "D4"]) | list %}
+          {% set has_core_ref = core_chars | selectattr("参考", "equalto", True) | list | length > 0 %}
+          {% set sp_names = tpl["SP案"] %}
+          {% set sp_details = tpl["SP詳細"] %}
+          {% set sp_core_refs = sp_details | selectattr("name", "in", sp_names) | selectattr("参考", "equalto", True) | list %}
+          {% set has_sp_ref = sp_core_refs | length > 0 %}
+          {% set has_ref = has_core_ref or has_sp_ref %}
+          {% if has_ref %}
+            <span class="ref-badge">参考</span>
+          {% endif %}
+          <span class="rank-badge">{{ tpl["順位"] }}</span>
+          <div class="defense-best5-icons-row">
+            {% set char_list = tpl["ピックキャラ"] + [
+              {"キャラ": tpl["SP案"][0], "枠": "DSP1"},
+              {"キャラ": tpl["SP案"][1], "枠": "DSP2"}
+            ] %}
+            {% for c in char_list %}
+              {% set idx = loop.index0 %}
+              {% set found = (striker_list if idx < 4 else special_list)|selectattr("name","equalto",c["キャラ"])|list|first %}
+              <div class="defense-best5-icon">
+                {% if found and found.image %}
+                  <img src="{{ found.image }}" alt="{{ c['キャラ'] }}">
+                {% else %}
+                  <span class="defense-best5-empty"></span>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          <div class="defense-best5-label-row">
+            <span class="defense-best5-label">D1</span>
+            <span class="defense-best5-label">D2</span>
+            <span class="defense-best5-label">D3</span>
+            <span class="defense-best5-label">D4</span>
+            <span class="defense-best5-label">DSP1</span>
+            <span class="defense-best5-label">DSP2</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
+<div class="usage-guide-box" style="margin-bottom:22px;">
+  <b>【おすすめ防衛編成メーカーの使い方】</b>
+  <ul style="margin-top:7px; margin-bottom:7px;">
+    <li>上のフォームで「攻撃編成」を入力し、「防衛編成を作成」ボタンを押してください。</li>
+    <li>「おすすめ防衛編成（上位5件）」には、入力した攻撃編成に対して勝率が高い防衛編成候補が表示されます。</li>
+    <li>左側に「参考」と表示されている編成は、サンプル数が少なく統計的な信頼度が低い編成です。</li>
+    <li>あくまでデータから導き出される編成ですので、参考程度でお願いします。</li>
+  </ul>
+</div>
+
+<!-- ▼ 折りたたみコンテナ ここから ▼ -->
+<div class="collapse-container">
+  <button class="collapse-toggle-btn" type="button" onclick="toggleCollapse()" id="collapseToggleBtn">
+    ▼ この機能は「さかな山脈」限定・マスクデータです（タップで展開）
+  </button>
+  <div class="collapse-content" id="collapseContent" style="display:none;">
+    {% if result["上位テンプレ詳細"] %}
+      <div class="result-card">
+        <div class="section-title">テンプレ上位5件（平均ベイズ勝率順）</div>
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>タグセット</th>
+              {% for l in result["攻めラベル"] %}
+                <th>{{ l }}<br>ベイズ勝率/生勝率</th>
+              {% endfor %}
+              <th>平均値</th>
+              <th>キャラ案</th>
+              <th>SP案</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tpl in result["上位テンプレ詳細"] %}
+              <tr>
+                <td>{{ tpl["順位"] }}</td>
+                <td>
+                  {% for tag in tpl["テンプレタグ"] %}
+                    [射程:{{tag[0]}} 遮蔽:{{"あり" if tag[1] else "なし"}}]{% if not loop.last %} / {% endif %}
+                  {% endfor %}
+                </td>
+                {% for stat in tpl["攻めごと勝率"] %}
+                  <td>
+                    {% if stat %}
+                      {{ (stat.wr * 100) | round(1) }}%
+                      {% if stat.winrate is not none %}
+                        / {{ (stat.winrate * 100) | round(1) }}%
+                      {% else %}
+                        / –
+                      {% endif %}
+                      <br>
+                      ({{ stat.games }}件)
+                    {% else %}
+                      <span class="text-muted">–（データなし）</span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+                <td>
+                  {% if tpl["平均ベイズ勝率"] is not none %}
+                    <b>{{ (tpl["平均ベイズ勝率"] * 100) | round(1) }}%</b>
+                  {% endif %}
+                </td>
+                <td>
+                  <ul>
+                    {% for c in tpl["ピックキャラ"] %}
+                      <li>
+                        <span class="char-box">{{c["キャラ"]}}</span>
+                        <span class="tag-box">（{{c["枠"]}}）</span>
+                        {% if c["参考"] %}<span class="ref-cell">参考（30件未満）</span>{% endif %}
+                        {% if c["キャラ勝率"] is not none %}
+                          <span class="small text-muted">勝率: {{c["キャラ勝率"] * 100}}%</span>
+                        {% endif %}
+                        <span class="small text-muted">(タグ内件数: {{c["件数"]}})</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </td>
+                <td>
+                  <div>
+                    {% for sp in tpl["SP案"] %}
+                      <span class="char-box">{{ sp }}</span>
+                    {% endfor %}
+                  </div>
+                  {% if tpl["SP詳細"] %}
+                    <div class="small mt-1">
+                      <b>SP詳細:</b>
+                      <ul style="margin-bottom:0;">
+                        {% for spd in tpl["SP詳細"] %}
+                          <li>
+                            {{ spd.name }}
+                            （{{ spd.games }}件・{{ spd.wins }}勝
+                            勝率:
+                            {% if spd.勝率 is not none %}
+                              {{ (spd.勝率 * 100) | round(1) }}%
+                            {% else %}–{% endif %}
+                            / ベイズ: {{ (spd.ベイズ勝率 * 100) | round(1) }}%
+                            {% if spd.参考 %}<span class="ref-cell">参考</span>{% endif %}
+                            )
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if result["無視攻め"] %}
+          <div class="text-muted small mt-3">
+            ※ 以下の攻撃編成はサンプル0件のため評価対象外になりました：<br>
+            {{ result["無視攻め"] | join(", ") }}
+          </div>
+        {% endif %}
+        <div id="tpl-preview-area" class="tpl-preview-area"></div>
+        {% if result["テンプレ決定過程"] %}
+          <hr>
+          <div class="section-title">[参考] テンプレ決定過程（テンプレ×攻撃ごとベイズ勝率/生勝率一覧）</div>
+          <table class="table table-bordered table-sm debug-table">
+            <thead class="debug-head">
+              <tr>
+                <th>#</th>
+                <th>タグセット</th>
+                {% for l in result["攻めラベル"] %}
+                  <th>{{ l }}<br>ベイズ勝率/生勝率</th>
+                {% endfor %}
+                <th>平均値</th>
+                <th>編成プレビュー</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in result["テンプレ決定過程"] %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>
+                    {% for tag in t["タグセット"] %}
+                      [射程:{{tag[0]}} 遮蔽:{{"あり" if tag[1] else "なし"}}]{% if not loop.last %} / {% endif %}
+                    {% endfor %}
+                  </td>
+                  {% for stat in t["攻めごと勝率"] %}
+                    <td>
+                      {% if stat %}
+                        {{ (stat.wr * 100) | round(1) }}%
+                        {% if stat.winrate is not none %}
+                          / {{ (stat.winrate * 100) | round(1) }}%
+                        {% else %}
+                          / –
+                        {% endif %}
+                        <br>
+                        ({{ stat.games }}件)
+                      {% else %}
+                        <span class="text-muted">–</span>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                  <td>
+                    {% if t["mean_wr"] is not none %}
+                      <b>{{ (t["mean_wr"] * 100) | round(1) }}%</b>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm show-tpl-btn"
+                            data-tpl='{{ t["タグセット"] | tojson }}'
+                            data-row="{{ loop.index }}">
+                      このテンプレで編成を見る
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+<!-- ▲ 折りたたみここまで ▲ -->
+
+<!-- キャラ選択モーダル -->
+<div class="modal-bg" id="modalBg">
+  <div class="char-modal">
+    <div class="modal-title" id="modalTitle">キャラを選択（1枠目）</div>
+    <input class="modal-search" id="modalSearch" placeholder="キャラ名で絞り込み">
+    <div class="char-list-grid" id="charListGrid"></div>
+    <div class="modal-actions">
+      <button class="modal-btn clear" id="modalClear">空に戻す</button>
+      <button class="modal-btn" id="modalCancel">キャンセル</button>
+      <button class="modal-btn ok" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<footer class="footer-custom">
+  ・運営/管理：作成者Twitter（<a href="https://twitter.com/BestM_JP" target="_blank" class="text-info fw-bold">@BestM_JP</a>）<br>
+  ・本サービスは個人による非公式ファンツールです<br>
+  ・<a href="{{ url_for('limited.privacy') }}" class="text-info fw-bold" style="text-decoration:underline;">プライバシーポリシー</a>
+  <span style="margin-left:1.4em;"></span>
+  ・<a href="{{ url_for('limited.contact') }}" class="text-info fw-bold" style="text-decoration:underline;">お問い合わせ</a>
+</footer>
+
+  <script>
+    function kataToHira(str) {
+      return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+        return String.fromCharCode(match.charCodeAt(0) - 0x60);
+      });
+    }
+    const strikerList = {{ striker_list | tojson }};
+    const specialList = {{ special_list | tojson }};
+    let attackTeams = {{ attack_teams | tojson | safe }} || Array.from({length: 5}, () => [null, null, null, null, null, null]);
+    let currAttackRow = null, currAttackCol = null;
+    let selectedChar = null;
+    function renderAttackTeams() {
+      for (let i = 0; i < 5; i++) {
+        const row = document.querySelector(`.attack-row[data-row="${i}"]`);
+        if (!row) continue;
+        for (let j = 0; j < 6; j++) {
+          const slot = row.children[j];
+          const ch = attackTeams[i][j];
+          slot.setAttribute('data-row', i);
+          slot.setAttribute('data-col', j);
+          slot.onclick = () => openAttackModal(i, j);
+          if (ch) {
+            slot.innerHTML = `<img src="${ch.image}" alt="${ch.name}"><button class="remove-icon" onclick="removeAttackChar(event,${i},${j})">&times;</button>`;
+          } else {
+            slot.innerHTML = `<span class="empty-text">EMPTY</span>`;
+          }
+        }
+      }
+    }
+    window.openAttackModal = function(i, j) {
+      currAttackRow = i;
+      currAttackCol = j;
+      selectedChar = attackTeams[i][j];
+      document.getElementById("modalTitle").innerText = `キャラを選択（${["A1","A2","A3","A4","ASP1","ASP2"][j]}）`;
+      document.getElementById("modalSearch").value = "";
+      renderCharList();
+      document.getElementById("modalBg").classList.add("active");
+    }
+    function closeModal() {
+      document.getElementById("modalBg").classList.remove("active");
+      selectedChar = null;
+    }
+    function renderCharList() {
+      const grid = document.getElementById("charListGrid");
+      const filter = kataToHira(document.getElementById("modalSearch").value.trim());
+      grid.innerHTML = "";
+      let pool = currAttackCol < 4 ? strikerList : specialList;
+      pool
+        .filter(c => {
+          if (selectedChar && selectedChar.name === c.name) return true;
+          return !attackTeams[currAttackRow].some((ch, idx) => ch && ch.name === c.name && idx !== currAttackCol);
+        })
+        .filter(c => kataToHira(c.name).includes(filter))
+        .forEach(c => {
+          const div = document.createElement("div");
+          div.className = "char-item" + (selectedChar && selectedChar.name === c.name ? " selected" : "");
+          div.innerHTML = `<img src="${c.image}" alt="${c.name}">`;
+          div.onclick = () => {
+            if (selectedChar && selectedChar.name === c.name) {
+              attackTeams[currAttackRow][currAttackCol] = c;
+              closeModal();
+              renderAttackTeams();
+            } else {
+              selectedChar = c;
+              renderCharList();
+            }
+          };
+          grid.appendChild(div);
+        });
+    }
+    document.getElementById("modalSearch").oninput = renderCharList;
+    document.getElementById("modalOk").onclick = () => {
+      attackTeams[currAttackRow][currAttackCol] = selectedChar;
+      closeModal();
+      renderAttackTeams();
+    };
+    document.getElementById("modalCancel").onclick = closeModal;
+    document.getElementById("modalClear").onclick = () => {
+      attackTeams[currAttackRow][currAttackCol] = null;
+      closeModal();
+      renderAttackTeams();
+    };
+    window.removeAttackChar = function(e, i, j) {
+      e.stopPropagation();
+      attackTeams[i][j] = null;
+      renderAttackTeams();
+    };
+    document.querySelectorAll('.attack-row').forEach(row => {
+      new Sortable(row, {
+        animation: 150,
+        ghostClass: "dragging",
+        chosenClass: "dragging",
+        swap: true,
+        swapClass: "highlight-swap",
+        delay: 150,
+        delayOnTouchOnly: true,
+        onEnd: function (evt) {
+          const i = parseInt(row.dataset.row);
+          const oldIndex = evt.oldIndex;
+          const newIndex = evt.newIndex;
+          if (oldIndex === newIndex) return;
+          const temp = attackTeams[i][oldIndex];
+          attackTeams[i][oldIndex] = attackTeams[i][newIndex];
+          attackTeams[i][newIndex] = temp;
+          renderAttackTeams();
+        }
+      });
+    });
+    document.getElementById("clearAllBtn").onclick = function(e) {
+      e.preventDefault();
+      attackTeams = Array.from({length: 5}, () => [null, null, null, null, null, null]);
+      renderAttackTeams();
+    };
+    document.getElementById("suggestForm").onsubmit = function(e) {
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 6; j++) {
+          const input = document.getElementById(`attack_${i}_${j}`);
+          input.value = attackTeams[i][j] ? attackTeams[i][j].name : "";
+        }
+      }
+    };
+    document.addEventListener("DOMContentLoaded", function () {
+      renderAttackTeams();
+      document.querySelectorAll(".show-tpl-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const tags = JSON.parse(this.getAttribute("data-tpl"));
+          const attacks = [];
+          for (let i = 0; i < 5; i++) {
+            let arr = [];
+            for (let j = 0; j < 6; j++) {
+              arr.push(attackTeams[i][j] ? attackTeams[i][j].name : "");
+            }
+            if (arr.some(x => x)) attacks.push(arr);
+          }
+          const strictPos = document.getElementById("strict_pos_chk").checked;
+          const season = document.querySelector('[name="season"]').value;
+          fetch("/api/template_detail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              template_tags: tags,
+              attacks: attacks,
+              season: season,
+              strict_pos: strictPos
+            })
+          })
+          .then(resp => resp.json())
+          .then(data => {
+            renderTplPreview(data, this.getAttribute("data-row"));
+          })
+          .catch(e => {
+            document.getElementById("tpl-preview-area").innerHTML =
+              `<div class="no-result">取得に失敗しました: ${e}</div>`;
+          });
+        });
+      });
+      function renderTplPreview(data, rowIndex) {
+        if (!data || !data["ピックキャラ"]) {
+          document.getElementById("tpl-preview-area").innerHTML =
+            `<div class="no-result">このテンプレの編成案を取得できませんでした。</div>`;
+          return;
+        }
+        let html = `<div class="tpl-preview-title">
+            [${rowIndex}位] このテンプレでの編成案（キャラ/SPピック・詳細）
+          </div>
+          <div class="tpl-preview-body">
+            <div><b>タグセット：</b> `;
+        html += data["テンプレタグ"].map(tag =>
+          `[射程:${tag[0]} 遮蔽:${tag[1] ? "あり" : "なし"}]`
+        ).join(" / ");
+        html += `</div><div><b>キャラ案：</b><ul>`;
+        for (const c of data["ピックキャラ"]) {
+          html += `<li>
+            <span class="char-box">${c["キャラ"]}</span>
+            <span class="tag-box">（${c["枠"]}）</span>
+            ${c["参考"] ? '<span class="ref-cell">参考（30件未満）</span>' : ''}
+            ${c["キャラ勝率"] !== null ? `<span class="small text-muted">勝率: ${(c["キャラ勝率"] * 100).toFixed(1)}%</span>` : ""}
+            <span class="small text-muted">(タグ内件数: ${c["件数"]})</span>
+          </li>`;
+        }
+        html += `</ul></div><div><b>SP案：</b> `;
+        html += data["SP案"].map(sp => `<span class="char-box">${sp}</span>`).join("");
+        if (data["SP詳細"] && data["SP詳細"].length > 0) {
+          html += `<div class="small mt-1"><b>SP詳細:</b><ul style="margin-bottom:0;">`;
+          for (const spd of data["SP詳細"]) {
+            html += `<li>${spd.name}（${spd.games}件・${spd.wins}勝 勝率: ${
+              spd.勝率 !== null ? (spd.勝率 * 100).toFixed(1) + "%" : "–"
+            } / ベイズ: ${(spd.ベイズ勝率 * 100).toFixed(1)}%${spd.参考 ? '<span class="ref-cell">参考</span>' : ""})</li>`;
+          }
+          html += `</ul></div>`;
+        }
+        html += `</div></div>`;
+        document.getElementById("tpl-preview-area").innerHTML = html;
+        document.getElementById("tpl-preview-area").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+
+
+function toggleCollapse() {
+  var content = document.getElementById('collapseContent');
+  var btn = document.getElementById('collapseToggleBtn');
+  if (content.style.display === 'none' || !content.style.display) {
+    content.style.display = 'block';
+    btn.innerHTML = '▲ 以下の機能は「さかな山脈」限定・マスクデータです（タップで閉じる）';
+  } else {
+    content.style.display = 'none';
+    btn.innerHTML = '▼ 以下の機能は「さかな山脈」限定・マスクデータです（タップで展開）';
+  }
+}
+
+
+  // サイドバー動作
+  const hamburgerBtn = document.getElementById('hamburger-btn');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarBg = document.getElementById('sidebar-bg');
+  const closeSidebarBtn = document.getElementById('close-sidebar');
+  hamburgerBtn.addEventListener('click', function () {
+    sidebar.classList.add('active');
+    sidebarBg.style.display = 'block';
+  });
+  closeSidebarBtn.addEventListener('click', closeSidebar);
+  sidebarBg.addEventListener('click', closeSidebar);
+  function closeSidebar() {
+    sidebar.classList.remove('active');
+    sidebarBg.style.display = 'none';
+  }
+
+
+  </script>
+</body>
+</html>

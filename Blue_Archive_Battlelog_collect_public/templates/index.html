@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+<meta name="google-site-verification" content="4GMC-Y_YcFE5giRV5RQjmObgAuhmClSSKmrSs333ZFY" />
+<meta name="google-site-verification" content="5jdGgzQ9EcR6LwSRfCz2ONeqcsCQ9Cvhrw0Wylp1DcA" />
+<link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-64P3RM78K2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-64P3RM78K2');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js?client=ca-pub-7051331824444850"
+     crossorigin="anonymous"></script>
+  <title>ブルーアーカイブ対抗戦DB | トップページ</title>
+<link rel="canonical" href="https://bluearchive-battlelog-p.com/">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="description" content="戦術対抗戦の対戦結果を記録、検索できるデータベース。スクリーンショットから自動で結果を読み取って記録できます。">
+  <meta name="keywords" content="ブルーアーカイブ,ブルアカ,対抗戦,編成,DB,検索,勝敗,データベース,アップロード">
+  <!-- OGP -->
+  <meta property="og:title" content="ブルーアーカイブ対抗戦DB | トップページ">
+  <meta property="og:type" content="website">
+  <meta property="og:description" content="戦術対抗戦の対戦結果を記録、検索できるデータベース。スクリーンショットから自動で結果を読み取って記録できます。">
+  <meta property="og:url" content="https://bluearchive-battlelog-p.com/">
+  <meta property="og:image" content="https://bluearchive-battlelog-p.com/static/ogp.png">
+  <!-- Twitterカード -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ブルーアーカイブ対抗戦DB | トップページ">
+  <meta name="twitter:description" content="戦術対抗戦の対戦結果を記録、検索できるデータベース。スクリーンショットから自動で結果を読み取って記録できます。">
+  <meta name="twitter:image" content="https://bluearchive-battlelog-p.com/static/ogp.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "ブルーアーカイブ対抗戦DB",
+  "url": "https://bluearchive-battlelog-p.com/",
+  "description": "戦術対抗戦の対戦結果を記録、検索できるデータベース。スクリーンショットから自動で結果を読み取って記録できます。"
+}
+</script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #e4f2fd 0%, #f7fafd 100%);
+      min-height: 100vh;
+      font-family: "Segoe UI", "ヒラギノ角ゴ ProN", "Meiryo", sans-serif;
+      margin: 0;
+      padding-top: 70px;
+    }
+    .navbar-custom {
+      position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+      background: #3397d8;
+      box-shadow: 0 2px 10px #acd8fa20;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 34px 0 16px; min-height: 62px;
+    }
+    .logo-link { display: flex; align-items: center; height: 56px; text-decoration: none; }
+    .logo-text { font-size: 2.1em; font-weight: 800; color: #fff; letter-spacing: 0.06em; line-height: 1.05; user-select: none; transition: color .15s;}
+    .logo-link:hover .logo-text { color: #d1e8fa; }
+    .nav-links { display: flex; gap: 18px;}
+    .nav-btn {
+      color: #fff;
+      background: transparent;
+      border: 2px solid #fff;
+      border-radius: 9px;
+      padding: 8px 28px;
+      font-size: 1.11em;
+      font-weight: bold;
+      text-decoration: none;
+      margin-left: 10px;
+      transition: background .16s, color .13s, border-color .16s;
+      box-shadow: 0 1px 6px #338eda10;
+    }
+    .nav-btn:hover {
+      background: #65c5f6;
+      color: #22639b;
+      border-color: #65c5f6;
+    }
+    .hamburger { display: none; flex-direction: column; justify-content: center; align-items: center; width: 42px; height: 42px; background: none; border: none; cursor: pointer; margin-left: 18px; z-index: 120;}
+    .hamburger span { width: 28px; height: 4px; margin: 3px 0; background: #fff; border-radius: 2px; display: block; transition: all .2s;}
+    .sidebar-bg { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(30,60,90,0.18); z-index: 101;}
+    .sidebar { display: flex; flex-direction: column; position: fixed; top: 0; right: -270px; width: 270px; height: 100vh; background: #fff; box-shadow: -2px 0 22px #338eda1a; padding: 22px 24px 0 24px; z-index: 102; transition: right .23s cubic-bezier(.7,.1,.37,1.3);}
+    .sidebar.active { right: 0; }
+    .sidebar-link { color: #338eda; text-decoration: none; font-size: 1.13em; padding: 16px 0; border-bottom: 1px solid #eef2f7; font-weight: bold; display: block; transition: color .13s;}
+    .sidebar-link:last-child { border-bottom: none; }
+    .sidebar-link:hover { color: #44bbec; }
+    .close-btn { background: none; border: none; font-size: 2em; color: #888; position: absolute; top: 10px; right: 18px; cursor: pointer; }
+    @media (max-width: 1000px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .navbar-custom { padding: 0 11px 0 7px; }
+      .logo-text { font-size: 1.48em; }
+    }
+    .title-panel {
+      max-width: 540px;
+      margin: 32px auto 16px auto;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 6px 32px #b0d6ee1c, 0 1px 0 #f8fbff;
+      padding: 32px 18px 18px 18px;
+    }
+    .main-title {
+      font-size: 2.3em;
+      font-weight: 900;
+      color: #338eda;
+      letter-spacing: 0.08em;
+      text-align: center;
+      text-shadow: 0 2px 10px #fff8, 0 1px 0 #c8e6fa;
+      margin: 0 0 6px 0;
+    }
+    .sub-title {
+      text-align: center;
+      color: #6ca0cb;
+      font-size: 1.08em;
+      margin-bottom: 0;
+    }
+    .btn-menu-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 36px;
+      justify-content: center;
+      margin: 38px 0 34px 0;
+    }
+    .menu-btn {
+      background: #fff;
+      color: #3397d8;
+      border: none;
+      border-radius: 18px;
+      padding: 20px 54px;
+      font-size: 1.20em;
+      font-weight: bold;
+      box-shadow: 0 2px 16px #93c8eb52, 0 1px 0 #f8fbff;
+      transition: background .16s, color .13s, box-shadow .18s;
+      min-width: 240px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 3px solid #95d9fa;
+    }
+    .menu-btn:hover {
+      background: #95d9fa;
+      color: #22639b;
+      box-shadow: 0 3px 18px #7bc2edb0;
+      border-bottom: 3px solid #3397d8;
+    }
+    .panel-box {
+      background: #f8fcff;
+      border: 2.6px solid #3397d8;
+      border-radius: 16px;
+      margin: 26px auto 0 auto;
+      max-width: 700px;
+      box-shadow: 0 2px 18px #44a3eb18;
+      overflow: hidden;
+    }
+    .panel-title {
+      background: #3397d8;
+      color: #fff;
+      font-weight: bold;
+      font-size: 1.13em;
+      padding: 10px 22px 8px 22px;
+      letter-spacing: 0.04em;
+    }
+    .panel-body {
+      padding: 18px 24px 14px 24px;
+      font-size: 1.07em;
+      color: #22334a;
+    }
+    /* ▼▼▼ 直近アップロード表示用スタイル（青系統・はみ出し修正） ▼▼▼ */
+    .recent-upload-panel {
+      background: #fff;
+      border: 2.6px solid #3397d8;
+      border-radius: 18px;
+      margin: 36px auto 0 auto;
+      max-width: 700px;
+      box-shadow: 0 6px 30px #97baf325, 0 1px 0 #f3f8fc;
+      overflow: visible;
+      padding-bottom: 12px;
+    }
+    .recent-upload-title {
+      background: #3397d8;
+      color: #fff;
+      font-weight: bold;
+      font-size: 1.14em;
+      padding: 10px 22px 8px 22px;
+      letter-spacing: 0.05em;
+      border-radius: 16px 16px 0 0;
+    }
+    .recent-upload-list {
+      padding: 18px 20px 6px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .recent-upload-row {
+      background: #e7f3fc;
+      border: 2px solid #b5d9f9;
+      border-radius: 13px;
+      box-shadow: 0 1px 6px #338eda24;
+      padding: 12px 12px 8px 10px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-height: 56px;
+      transition: box-shadow .13s;
+      flex-wrap: wrap;
+    }
+    .recent-upload-row:hover {
+      box-shadow: 0 4px 18px #91c3ec42;
+    }
+    .side-icon-img,
+    .lose-icon-img {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      object-fit: contain;
+      background: #fff;
+      border: 1.5px solid #efefef;
+      box-shadow: 0 0 6px #d3eafd22;
+      padding: 2px;
+    }
+    .lose-icon-img { width: 48px; height: 34px; }
+    .char-list-img {
+      display: flex;
+      gap: 8px;
+    }
+    .char-img {
+      width: 43px;
+      height: 43px;
+      border-radius: 11px;
+      background: #e5f0fb;
+      object-fit: cover;
+      box-shadow: 0 0 8px #a5c8f966;
+      border: 1.2px solid #b3d5ef;
+    }
+    .recent-date {
+      font-size: 1.01em;
+      color: #4678a8;
+      min-width: 132px;
+      text-align: right;
+      margin-left: 8px;
+    }
+    .btn-recent-search {
+      background: #3397d8;
+      color: #fff;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.12em;
+      padding: 8px 24px 8px 16px;
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background .14s, box-shadow .16s;
+      box-shadow: 0 1px 6px #338eda30;
+      white-space: nowrap;
+      max-width: 120px;
+    }
+    .btn-recent-search:hover {
+      background: #22639b;
+      color: #fff;
+      box-shadow: 0 3px 14px #8ccbf3;
+      text-decoration: none;
+    }
+    @media (max-width: 900px) {
+      .recent-upload-panel, .panel-box { max-width: 97vw; }
+      .recent-upload-list { padding: 8px 2vw 2px 2vw; }
+      .recent-upload-row { padding: 7px 2vw 5px 2vw; gap: 6px; }
+      .recent-date { min-width: 88px; font-size: 0.95em;}
+      .side-icon-img, .lose-icon-img { width: 26px; height: 26px;}
+      .char-img { width: 29px; height: 29px; border-radius: 7px;}
+      .btn-recent-search { font-size: 1.01em; padding: 7px 10px 7px 9px; margin-left: auto;}
+    }
+    /* ▲▲▲ 直近アップロード表示用スタイル（青系統・修正版）ここまで ▲▲▲ */
+    .news-scroll {
+      max-height: 110px;
+      overflow-y: auto;
+      background: #fff;
+      border-radius: 0 0 13px 13px;
+      border-top: 1.5px solid #e1ecfa;
+      padding: 9px 12px 8px 20px;
+      font-size: 1em;
+    }
+    .panel-body ul, .panel-body ol {
+      padding-left: 1.2em;
+      margin-bottom: 0;
+    }
+    .panel-body li {
+      margin-bottom: 0.38em;
+    }
+    .faq-q { font-weight: bold; color: #338eda; margin-top: 8px;}
+    .faq-a { margin-left: 0.4em; margin-bottom: 7px;}
+    .footer-custom {
+      background:rgba(250,250,250,0.94);
+      margin-top: 48px;
+      border-radius: 0 0 14px 14px;
+      text-align:center;
+      font-size:0.99em;
+      color:#444;
+      padding: 18px 4px 16px 4px;
+    }
+    /* ▼ 追加: サブリンク用（控えめに下部） ▼ */
+    .index-sub-links {
+      margin: 22px auto 0 auto;
+      max-width: 690px;
+      text-align: right;
+      font-size: 0.97em;
+      color: #3379ad;
+      opacity: 0.86;
+    }
+    .index-sub-links a {
+      color: #338eda;
+      text-decoration: underline;
+      margin-left: 16px;
+      margin-right: 0;
+      transition: color .15s;
+    }
+    .index-sub-links a:hover {
+      color: #1d547a;
+    }
+
+.title-pc {
+  display: inline;
+}
+.title-sp {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .title-pc {
+    display: none;
+  }
+  .title-sp {
+    display: inline;
+  }
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+.navbar-custom {
+  box-sizing: border-box;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+
+.menu-btn {
+  white-space: nowrap;     /* ←自動改行を禁止 */
+  min-width: 0;            /* ←必要に応じて */
+}
+
+
+  </style>
+</head>
+<body>
+  <!-- ▼▼ 共通ナビゲーション・ヘッダー・サイドバー ▼▼ -->
+<header>
+  <nav class="navbar-custom">
+    <a href="/" class="logo-link">
+      <span class="logo-text">BlueArchive対抗戦DB</span>
+    </a>
+    <div class="nav-links">
+      <a href="/upload" class="nav-btn">アップロード</a>
+      <a href="/search" class="nav-btn">編成検索</a>
+      <a href="/defense_suggest" class="nav-btn">防衛メーカー</a>
+    </div>
+    <button class="hamburger" id="hamburger-btn">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="sidebar-bg" id="sidebar-bg"></div>
+  <aside class="sidebar" id="sidebar">
+    <button class="close-btn" id="close-sidebar">&times;</button>
+    <a href="/upload" class="sidebar-link">アップロード</a>
+    <a href="/search" class="sidebar-link">編成検索</a>
+    <a href="/defense_suggest" class="sidebar-link">防衛編成メーカー</a>
+  </aside>
+</header>
+  <!-- ▲▲ ヘッダー・サイドバーここまで ▲▲ -->
+
+ <main>
+  <div class="title-panel">
+    <div class="main-title">
+      <span class="title-pc">BlueArchive<b>対抗戦DB</b></span>
+      <span class="title-sp">BlueArchive<br><b>対抗戦DB</b></span>
+    </div>
+    <div class="sub-title">ブルーアーカイブ戦術対抗戦の編成・結果データベース</div>
+  </div>
+<div class="btn-menu-wrap" style="display:grid; grid-template-columns: 1fr 1fr; gap: 34px 36px; max-width: 560px; margin: 38px auto 34px auto;">
+  <a href="/upload" class="menu-btn">アップロード</a>
+  <a href="/search" class="menu-btn">編成検索</a>
+  <a href="/defense_suggest" class="menu-btn">防衛編成メーカー</a>
+  <!-- 4つ目のボタンを入れる場合は下に追加でOK -->
+</div>
+
+    <!-- ▼▼▼ お知らせを一番上に ▼▼▼ -->
+    <div class="panel-box">
+      <div class="panel-title">お知らせ</div>
+      <div class="news-scroll">
+        {% include 'notices.html' %}
+      </div>
+    </div>
+
+    <!-- ▼▼▼ 直近アップロード（青系）ここから ▼▼▼ -->
+    <div class="recent-upload-panel">
+      <div class="recent-upload-title">直近のアップロード</div>
+      <div class="recent-upload-list">
+        {% if loser_teams %}
+          {% for team in loser_teams %}
+            <div class="recent-upload-row">
+              <img class="side-icon-img" src="{{ team.side_icon }}" alt="{{ '攻撃側' if team.side == 'attack' else '防衛側' }}">
+              <img class="lose-icon-img" src="{{ team.lose_icon }}" alt="Lose">
+              <div class="char-list-img">
+                {% for ch in team.characters %}
+                  {% if ch.image_url %}
+                    <img class="char-img" src="{{ ch.image_url }}" alt="{{ ch.name }}">
+                  {% else %}
+                    <span class="char-img" style="background:#eee;border:1px solid #ddd;"></span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <span class="recent-date">{{ team.date }}</span>
+              <a class="btn-recent-search" href="/search?side={{ team.side }}{% for i in range(6) %}&c{{i+1}}={{ team.characters[i].name|urlencode }}{% endfor %}">
+                <svg width="1.2em" height="1.2em" style="margin-right:2px;vertical-align:-2px;" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="7" cy="7" r="6" stroke="#fff" stroke-width="2"/><rect x="11" y="11" width="4" height="2" rx="1" transform="rotate(45 11 11)" fill="#fff"/></svg>
+                検索
+              </a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="color:#4678a8; padding:16px 0;">最近のアップロードがまだありません</div>
+        {% endif %}
+      </div>
+    </div>
+    <!-- ▲▲▲ 直近アップロードここまで ▲▲▲ -->
+
+    <div class="panel-box">
+      <div class="panel-title">このサイトについて</div>
+      <div class="panel-body">
+        <ul>
+          <li>対抗戦の戦闘ログ画像をアップロードして記録・蓄積</li>
+          <li>アップロードされたデータは自動で整理・分析されます</li>
+          <li>過去の編成や勝敗データをページ内で検索・閲覧できます</li>
+        </ul>
+        <div style="font-size:0.98em; color:#476998; margin-top:8px;">
+          ※アップロードされたデータは一般公開されます。<br>
+          ※個人情報や広告配信などプライバシーに関する詳細は
+          <a href="/privacy.html" style="color:#338eda;text-decoration:underline;">プライバシーポリシー</a>
+          をご覧ください。
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <div class="panel-title">サイトの活用シーン</div>
+      <div class="panel-body">
+        <ul>
+          <li>他のユーザーの編成や勝敗データを参考にしたいとき</li>
+          <li>手強い編成相手にどう挑めばいいか編成例を探したいとき</li>
+          <li>流行や最新のメタ傾向を知りたいとき</li>
+          <li>自分のバトルログを記録・共有したいとき</li>
+        </ul>
+        <div style="font-size:0.97em; color:#476998;">
+          ユーザー同士でデータを持ち寄ることで、<br>
+          編成研究や環境分析にも活用できます。
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <div class="panel-title">アップロードの流れ</div>
+      <div class="panel-body">
+        <ol>
+          <li>ゲーム画面より対抗戦のバトルリザルト画面をスクリーンショット</li>
+          <li>本サイト「アップロード」ページから画像を選択して送信</li>
+          <li>読み取り結果を確認し、必要に応じて修正</li>
+          <li>送信完了後、データがデータベースに反映されます</li>
+        </ol>
+        <div style="font-size:0.97em; color:#476998;">
+          アップロード内容は自動で整理され、どなたでも検索できるようになります。
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <div class="panel-title">検索の流れ</div>
+      <div class="panel-body">
+        <ol>
+          <li>「編成検索」ページで、調べたい編成やキャラを選択</li>
+          <li>攻撃側・防衛側を切り替えて検索条件を指定</li>
+          <li>「この編成を検索」ボタンを押すと、該当するバトルログ一覧が表示されます</li>
+        </ol>
+        <div style="font-size:0.97em; color:#476998;">
+          データが増えるほど、より多様な検索や分析ができます。
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <div class="panel-title">よくある質問</div>
+      <div class="panel-body">
+        <div class="faq-q">Q. データは誰でも見れますか？</div>
+        <div class="faq-a">A. アップロードされたデータはどなたでも検索・閲覧可能です。</div>
+        <div class="faq-q">Q. サークルやギルド、SNS等で共有してもいい？</div>
+        <div class="faq-a">A. ご自由にご利用ください。多くの方が利用するほどデータベースとしての精度や価値が上がりますので、むしろ大歓迎です。</div>
+        <div class="faq-q">Q. 個人情報の取り扱いや広告配信について知りたい</div>
+        <div class="faq-a">A. <a href="/privacy.html" style="color:#338eda;text-decoration:underline;">プライバシーポリシー</a>をご覧ください。</div>
+      </div>
+    </div>
+
+    <!-- ▼▼▼ サブリンク控えめに追加 ▼▼▼ -->
+    <div class="index-sub-links">
+      <a href="/guide">ご利用ガイド</a>
+      <a href="/tips">対抗戦Tips</a>
+    </div>
+    <!-- ▲▲▲ サブリンクここまで ▲▲▲ -->
+
+  </main>
+
+  <footer class="footer-custom">
+    ・運営/管理：作成者Twitter（<a href="https://twitter.com/BestM_JP" target="_blank" class="text-info fw-bold">@BestM_JP</a>）<br>
+    ・本サービスは個人による非公式ファンツールです<br>
+    ・<a href="/privacy.html" class="text-info fw-bold" style="text-decoration:underline;">プライバシーポリシー</a>
+    <span style="margin-left:1.4em;"></span>
+    ・<a href="/contact.html" class="text-info fw-bold" style="text-decoration:underline;">お問い合わせ</a>
+  </footer>
+
+
+  <script>
+    // サイドバー動作
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBg = document.getElementById('sidebar-bg');
+    const closeSidebarBtn = document.getElementById('close-sidebar');
+    hamburgerBtn.addEventListener('click', function () {
+      sidebar.classList.add('active');
+      sidebarBg.style.display = 'block';
+    });
+    closeSidebarBtn.addEventListener('click', closeSidebar);
+    sidebarBg.addEventListener('click', closeSidebar);
+    function closeSidebar() {
+      sidebar.classList.remove('active');
+      sidebarBg.style.display = 'none';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <script async src="https://pagead2.google.com/pagead/js/adsbygoogle.js?client=ca-pub-7051331824444850"
+     crossorigin="anonymous"></script>
+  <title>ブルアカ対抗戦DB</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- SortableJS＆Swapプラグイン -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/plugins/Swap/Sortable.swap.min.js"></script>
+<style>
+body { background: linear-gradient(135deg, #e4f2fd 0%, #f7fafd 100%); min-height: 100vh; font-family: "Segoe UI", "ヒラギノ角ゴ ProN", "Meiryo", sans-serif; margin:0; }
+.navbar-custom {
+  position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+  background: #eb6b92; box-shadow: 0 2px 10px #f6b5ce20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 34px 0 16px; min-height: 62px;
+}
+.logo-link { display: flex; align-items: center; height: 56px; text-decoration: none; }
+.logo-text { font-size: 2.1em; font-weight: 800; color: #fff; letter-spacing: 0.06em; line-height: 1.05; font-family: "Segoe UI", "ヒラギノ角ゴ ProN", "Meiryo", sans-serif; user-select: none; transition: color .15s; }
+.logo-link:hover .logo-text { color: #d73770; }
+.nav-links { display: flex; gap: 18px;}
+.nav-btn { color: #fff; background: transparent; border: 2px solid #fff; border-radius: 9px; padding: 8px 28px; font-size: 1.11em; font-weight: bold; text-decoration: none; margin-left: 10px; transition: background .16s, color .13s, border-color .16s; box-shadow: 0 1px 6px #338eda10; }
+.nav-btn:hover { background: #f170a7; color: #fff; border-color: #f170a7; }
+.hamburger { display: none; flex-direction: column; justify-content: center; align-items: center; width: 42px; height: 42px; background: none; border: none; cursor: pointer; margin-left: 18px; z-index: 120;}
+.hamburger span { width: 28px; height: 4px; margin: 3px 0; background: #fff; border-radius: 2px; display: block; transition: all .2s;}
+.sidebar-bg { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(30,60,90,0.18); z-index: 101;}
+.sidebar { display: flex; flex-direction: column; position: fixed; top: 0; right: -270px; width: 270px; height: 100vh; background: #fff; box-shadow: -2px 0 22px #338eda1a; padding: 22px 24px 0 24px; z-index: 102; transition: right .23s cubic-bezier(.7,.1,.37,1.3);}
+.sidebar.active { right: 0; }
+.sidebar-link { color: #f170a7; text-decoration: none; font-size: 1.13em; padding: 16px 0; border-bottom: 1px solid #eef2f7; font-weight: bold; display: block; transition: color .13s;}
+.sidebar-link:last-child { border-bottom: none; }
+.sidebar-link:hover { color: #eb6b92; }
+.close-btn { background: none; border: none; font-size: 2em; color: #888; position: absolute; top: 10px; right: 18px; cursor: pointer; }
+@media (max-width: 1000px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .navbar-custom { padding: 0 11px 0 7px; }
+  .logo-text { font-size: 1.48em; }
+}
+body { padding-top: 70px; }
+.main-card, .search-results-section {
+  max-width: 1240px; margin: 36px auto; border-radius: 18px;
+  background: #fff; box-shadow: 0 8px 32px rgba(180,80,160,0.09);
+  padding: 24px 18px 18px 18px;
+}
+.section-title { font-size: 1.35rem; font-weight: bold; color: #eb6b92; margin-bottom: 18px; letter-spacing: 0.08em; }
+/* プルダウン横ラベルのカラー調整 */
+label[for="seasonSelect"] { font-weight:bold; color:#c4577a; margin-right:7px; }
+.tab-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 0; }
+.tab-btns { display: flex; gap: 16px; }
+.tab-btn { border: none; border-radius: 999px; padding: 8px 32px; font-weight: bold; font-size: 1.1em; background: #fae1e9; color: #eb6b92; transition: background .15s, color .15s; box-shadow: 0 2px 8px rgba(180,80,160,0.09); cursor: pointer; }
+.tab-btn.active { background: #eb6b92; color: #fff; }
+.clear-all-btn {
+  background: #f8e9f0; color: #c4577a; border: 1.6px solid #f4b9d0; border-radius: 14px;
+  font-size: 0.99em; font-weight: bold; padding: 5px 16px 5px 10px;
+  box-shadow: 0 2px 10px #eb6b9212; cursor: pointer;
+  transition: background .15s, color .13s, border-color .13s;
+  margin-left: 0;
+}
+.clear-all-btn:hover { background: #f7c3d6; color: #ea5555; border-color: #f7a7be; }
+@media (max-width: 900px) {
+  .tab-btns { gap: 8px; }
+  .clear-all-btn { font-size: 0.89em; padding: 4px 8px; }
+}
+.defense-row-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 18px; position:relative; }
+.defense-row { display: flex; gap: 14px; margin-bottom: 0; justify-content: center; }
+.def-slot { width: 92px; height: 92px; background: #f9c4d7; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.35em; font-weight: bold; cursor: pointer; position: relative; box-shadow: 0 2px 8px #eb6b9233; transition: box-shadow .13s; border: 2.3px solid #f7a7be; flex-direction: column; }
+.def-slot img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; box-shadow: 0 0 8px #f7a7be80; }
+.def-slot .remove-icon { position: absolute; top: 4px; right: 8px; background: #fff; color: #ea5555; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1em; cursor: pointer; box-shadow: 0 1px 6px #8882; border: none; }
+.def-slot span.empty-text { display: inline-block; font-size: 1.05em; font-weight: 900; letter-spacing: 0.03em;}
+@media (max-width: 900px) {
+  .def-slot span.empty-text { font-size: 0.68em; }
+}
+.slot-label-row { display: flex; gap: 14px; justify-content: center; margin-top: 6px; margin-bottom: 2px; }
+.slot-label { width: 92px; text-align: center; font-size: 0.98em; font-weight: bold; color: #c4577a; letter-spacing: 0.08em; padding-bottom: 2px; user-select: none; }
+.search-btn { background: linear-gradient(90deg, #fca7c6, #eb6b92 90%); color: #fff; border: none; border-radius: 12px; padding: 10px 38px; font-size: 1.25em; font-weight: bold; box-shadow: 0 2px 12px #f6b5ce22; margin-top: 8px; margin-bottom: 8px; transition: background .16s; }
+.search-btn:hover { background: #eb6b92; }
+.search-results-section { margin: 42px auto 32px auto; padding: 24px 16px; }
+.search-result-title { font-size: 1.17em; color: #eb6b92; font-weight: bold; margin-bottom: 16px; }
+.result-row {
+  display: flex; align-items: center; justify-content: center; gap: 38px; margin-bottom: 22px;
+  background: #fff; border-radius: 14px; box-shadow: 0 2px 12px #eb6b9213;
+  padding: 18px 22px 20px 22px; position: relative; min-height: 110px;
+  width: 100%; max-width: 1000px; margin-left: auto; margin-right: auto; transition: all .2s;
+}
+.result-row.limited-border {
+  border: 2.5px solid #ffbf2b;
+  box-shadow: 0 2px 16px #ffe68033;
+  background: linear-gradient(90deg,#fffbe2 90%,#fff8ca 100%);
+}
+.result-row.limited-border .left-bottom,
+.result-row.limited-border .vs-col {
+  background: linear-gradient(90deg,#fffbe2 90%,#fff8ca 100%);
+}
+.side-col { display: flex; flex-direction: column; align-items: center; min-width: 330px; max-width: 370px; gap: 0; margin: 0; position: relative; flex: 1 1 0; transition: all .2s;}
+.side-main, .right-main-center { display: flex; flex-direction: row; align-items: center; justify-content: center; width: 100%;}
+.right-block { display: flex; flex-direction: row; align-items: center; justify-content: center; width: 100%;}
+.side-icons-wrap { display: flex; flex-direction: row; align-items: center; gap: 0; margin-right: 18px; min-width: 0; margin-left: 0;}
+.side-col.left-col .side-icons-wrap, .side-col.right-col .side-icons-wrap { margin-right: 18px;}
+.side-icon, .winlose-icon {
+  border: 2px solid #f7a7be; background: none; border-radius: 7px; padding: 1px 4px; box-shadow: 0 1px 4px #f7a7be44;
+  height: 26px; max-height: 26px; width: auto; max-width: 54px; margin: 0; display: block; object-fit: contain; font-size: 0.98em; box-sizing: border-box; transition: all .2s;
+}
+.char-row { display: flex; gap: 7px; align-items: center; margin-bottom: 0; flex-shrink: 1; flex-grow: 1; justify-content: center; flex-wrap: nowrap; min-width: 246px; max-width: 310px; transition: all .2s; }
+.char-row.left-row { margin-left: 0; }
+.char-row.right-row { margin-right: 0; }
+.char-img { width: 39px; height: 39px; border-radius: 8px; background: #fae1e9; object-fit: cover; box-shadow: 0 0 8px #f7a7be20; margin: 0 0; display: inline-block; transition: all .2s;}
+.vs-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; transition: all .2s;}
+.vs-mark {
+  font-weight: bold; font-size: 1.22em; color: #eb6b92; display: flex; align-items: center; justify-content: center;
+  height: 39px; width: 38px; min-width: 38px; max-width: 38px; background: #fff; transition: all .2s;
+}
+.result-row.limited-border .vs-mark { background: linear-gradient(90deg,#fffbe2 90%,#fff8ca 100%) !important; }
+.left-bottom, .vs-dummy, .result-date { height: 27px; line-height: 27px; margin: 0; padding: 0; font-size: 0.98em; text-align: center; box-sizing: border-box; background: none; transition: all .2s; }
+.result-date { color: #999; font-size: 0.98em; font-family: inherit; background: none; margin: 0; text-align: right;}
+@media (max-width: 900px) {
+  .main-card, .search-results-section { max-width: 99vw; padding: 8px 2vw;}
+  .search-btn { padding: 7px 16px; font-size: 1.05em; border-radius: 8px; min-width: 0; width: 90vw; max-width: 270px; margin-top: 4px; margin-bottom: 6px;}
+  .result-row { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 13px 0; min-height: 0; max-width: 99vw;}
+  .team-block { display: flex; flex-direction: row; align-items: center; justify-content: center; margin-bottom: 0; gap: 4px; width: 99vw; max-width: 370px;}
+  .side-icons-wrap { margin-right: 6px; }
+  .side-icon, .winlose-icon { height: 17px; max-height: 17px; border-radius: 5px; }
+  .char-row { gap: 3px; min-width: 1px; max-width: 99vw; }
+  .char-img { width: 24px; height: 24px; border-radius: 6px; }
+  .vs-col { margin: 3px 0 3px 0; }
+  .vs-mark { height: 20px; width: 27px; font-size: 1.08em; }
+  .result-date { margin: 5px auto 0 auto; font-size: 0.93em; }
+  .defense-row { gap: 6px; flex-wrap: nowrap; overflow-x: auto; }
+  .def-slot { width: 49px; height: 49px; }
+  .def-slot img { width: 39px; height: 39px; }
+  .def-slot .remove-icon { width: 15px; height: 15px; font-size: 0.95em; top: 2px; right: 2px; }
+  .slot-label-row { gap: 6px; }
+  .slot-label { width: 49px; font-size: 0.85em;}
+  .char-list-grid { gap: 5px; }
+  .char-item { width: 37px; height: 37px; }
+  .char-item img { width: 29px; height: 29px; }
+}
+.modal-bg { display: none; position: fixed; left:0; top:0; width:100vw; height:100vh; background: rgba(0,38,80,0.25); z-index: 1001; align-items: center; justify-content: center;}
+.modal-bg.active { display: flex !important;}
+.char-modal { background: #fff; border-radius: 16px; max-width: 750px; width: 97vw; padding: 22px 24px 14px 24px; box-shadow: 0 4px 28px #f6b5ce2a; animation: modalpop .22s; min-height: 320px; position: relative;}
+@keyframes modalpop { 0% { transform: scale(0.98); opacity:0; } 100% { transform: scale(1); opacity:1; } }
+.modal-title { font-weight: bold; color: #eb6b92; margin-bottom: 10px; font-size: 1.16em; text-align: left; }
+.modal-search { width: 100%; margin-bottom: 10px; font-size: 1.08em; padding: 6px 10px; border-radius: 7px; border:1.5px solid #f7a7be; }
+.char-list-grid { display: flex; flex-wrap: wrap; gap: 8px; max-height: 320px; overflow-y: auto; margin-bottom: 10px; }
+.char-item { width: 54px; height: 54px; border-radius: 8px; border: 2px solid #f7a7be; background: #fae1e9; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border .11s; position: relative; }
+.char-item.selected { border: 2.7px solid #ffcf32; box-shadow: 0 0 8px #ffe68080; }
+.char-item img { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; }
+.modal-actions { display: flex; gap: 14px; justify-content: flex-end; margin-top: 2px; }
+.modal-btn { background: #fae1e9; color: #eb6b92; border: none; border-radius: 9px; font-weight: bold; padding: 7px 20px; font-size: 1.06em; transition: background .13s, color .13s; margin-top: 4px;}
+.modal-btn.ok { background: #eb6b92; color: #fff; }
+.modal-btn.clear { color: #ea5555; border: 1.5px solid #ea5555; background: #fff; }
+.highlight-swap { box-shadow: 0 0 10px #ffee80, 0 0 3px #ffdf32; background: #fff7d6 !important; }
+.defense-row.dragging .def-slot { opacity: 0.7; box-shadow: 0 0 12px #eb6b9233; }
+.def-slot.dragging { background: #fae1e9; }
+
+/* ▼ recent-upload-panelスタイル（一般版を流用） */
+.recent-upload-panel {
+  background: #fff;
+  border: 2.6px solid #eb6b92;
+  border-radius: 18px;
+  margin: 36px auto 0 auto;
+  max-width: 700px;
+  box-shadow: 0 6px 30px #ed97bf25, 0 1px 0 #f3f8fc;
+  overflow: visible;
+  padding-bottom: 12px;
+}
+.recent-upload-title {
+  background: #eb6b92;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.14em;
+  padding: 10px 22px 8px 22px;
+  letter-spacing: 0.05em;
+  border-radius: 16px 16px 0 0;
+}
+.recent-upload-list {
+  padding: 18px 20px 6px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.recent-upload-row {
+  background: #f9e8ef;
+  border: 2px solid #edb7d9;
+  border-radius: 13px;
+  box-shadow: 0 1px 6px #eb6b9224;
+  padding: 12px 12px 8px 10px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 56px;
+  transition: box-shadow .13s;
+  flex-wrap: wrap;
+}
+.recent-upload-row:hover {
+  box-shadow: 0 4px 18px #e191c342;
+}
+.side-icon-img,
+.lose-icon-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #fff;
+  border: 1.5px solid #efefef;
+  box-shadow: 0 0 6px #eab5ea22;
+  padding: 2px;
+}
+.lose-icon-img { width: 48px; height: 34px; }
+.char-list-img {
+  display: flex;
+  gap: 8px;
+}
+.char-img {
+  width: 43px;
+  height: 43px;
+  border-radius: 11px;
+  background: #fbe5f0;
+  object-fit: cover;
+  box-shadow: 0 0 8px #e9b5e966;
+  border: 1.2px solid #eeb3df;
+}
+.recent-date {
+  font-size: 1.01em;
+  color: #d878a8;
+  min-width: 132px;
+  text-align: right;
+  margin-left: 8px;
+}
+.btn-recent-search {
+  background: #eb6b92;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.12em;
+  padding: 8px 24px 8px 16px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: background .14s, box-shadow .16s;
+  box-shadow: 0 1px 6px #eb6b9230;
+  white-space: nowrap;
+  max-width: 120px;
+}
+.btn-recent-search:hover {
+  background: #c4577a;
+  color: #fff;
+  box-shadow: 0 3px 14px #f6b5ce;
+  text-decoration: none;
+}
+@media (max-width: 1000px) {
+  .recent-upload-panel, .panel-box { max-width: 97vw; }
+  .recent-upload-list { padding: 8px 2vw 2px 2vw; }
+  .recent-upload-row { padding: 7px 2vw 5px 2vw; gap: 6px; }
+  .recent-date { min-width: 88px; font-size: 0.95em;}
+  .side-icon-img, .lose-icon-img { width: 26px; height: 26px;}
+  .char-img { width: 29px; height: 29px; border-radius: 7px;}
+  .btn-recent-search { font-size: 1.01em; padding: 7px 10px 7px 9px; margin-left: auto;}
+}
+.footer-custom { background:rgba(250,250,250,0.94); margin-top: 48px; border-radius: 0 0 14px 14px; text-align:center; font-size:0.99em; color:#444; padding: 18px 4px 16px 4px; }
+@media (max-width: 900px) { .footer-custom { max-width: 97vw; } }
+
+.info-panel {
+  background: #f7fcff;
+  border: 2px solid #f7a7be;      /* 限定版カラー */
+  border-radius: 15px;
+  box-shadow: 0 2px 12px #f6b5ce36;
+  max-width: 900px;
+  margin: 30px auto 0 auto;
+  padding: 22px 18px 15px 18px;
+  font-size: 1.07em;
+  color: #c4577a;
+  text-align: left;
+}
+@media (max-width:900px){
+  .info-panel {max-width:99vw; padding:12px 2vw 10px 2vw;}
+}
+
+
+.condition-wrap {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  align-items: start;
+  margin-bottom: 6px;
+}
+
+.condition-side-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  padding-top: 0px; /* ちょっと微調整 */
+}
+
+.side-label {
+  font-weight: bold;
+  color: #4076b9;
+  font-size: 1.07em;
+  height: 42px;
+  line-height: 42px;
+  text-align: right;
+  margin-bottom: 0px;
+  user-select: none;
+}
+
+.condition-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.condition-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  min-height: 48px;
+  width: 92px;
+}
+
+.condition-cell select {
+  width: 76px;
+  margin-bottom: 6px;
+}
+
+
+@media (max-width: 900px) {
+  .defense-row-wrap {
+    max-width: 346px;   /* = 49px×6 + gap(6×5=30)で調整 */
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .condition-wrap {
+    grid-template-columns: 38px 1fr; /* まず38pxくらいから微調整 */
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  .condition-side-labels {
+    gap: 6px;
+    padding-top: 0px;
+  }
+  .side-label {
+    font-size: 0.94em;
+    height: 24px;
+    line-height: 24px;
+    margin-bottom: 0px;
+    width: 38px;   /* ラベル側はここに合わせる */
+    text-align: right;
+    white-space: nowrap;
+  }
+  .condition-row {
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .condition-cell {
+    width: 49px;
+    min-height: 25px;
+  }
+  .condition-cell select {
+    width: 41px;
+    font-size: 0.94em;
+    margin-bottom: 2px;
+   padding: 1.5px 18px 1.5px 2.5px; /* 右側padding増やす */
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  /* ▼追加 */
+  background-position: right 3px center;
+}
+}
+
+
+</style>
+
+</head>
+<body>
+  <!-- ▼▼ 共通ナビゲーション・ヘッダー・サイドバー ▼▼ -->
+  <header>
+    <nav class="navbar-custom">
+      <a href="{{ url_for('limited.index') }}" class="logo-link">
+        <span class="logo-text">BlueArchive対抗戦DB</span>
+      </a>
+      <div class="nav-links">
+        <a href="{{ url_for('limited.upload') }}" class="nav-btn">アップロード</a>
+        <a href="{{ url_for('limited.search') }}" class="nav-btn">編成検索</a>
+        <a href="{{ url_for('limited.defense_suggest') }}" class="nav-btn">防衛メーカー</a>
+      </div>
+      <button class="hamburger" id="hamburger-btn">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+    <div class="sidebar-bg" id="sidebar-bg"></div>
+    <aside class="sidebar" id="sidebar">
+      <button class="close-btn" id="close-sidebar">&times;</button>
+      <a href="{{ url_for('limited.upload') }}" class="sidebar-link">アップロード</a>
+      <a href="{{ url_for('limited.search') }}" class="sidebar-link">編成検索</a>
+      <a href="{{ url_for('limited.defense_suggest') }}" class="sidebar-link">防衛編成メーカー</a>
+    </aside>
+  </header>
+  <!-- ▲▲ ヘッダー・サイドバーここまで ▲▲ -->
+
+{% set show_results = request.args.get('side') is not none %}
+
+<div class="main-card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <div class="section-title">対抗戦 編成検索</div>
+    <div style="margin:0 0 0 12px;display:flex;align-items:center;">
+      <label for="seasonSelect" style="font-weight:bold; color:#c4577a; margin-right:7px;">シーズン</label>
+      <select name="season" id="seasonSelect" class="form-select" style="width:auto;min-width:130px;display:inline-block;">
+        {% for season in SEASON_LIST %}
+          <option value="{{ season.key }}" {% if season.key == request.args.get('season', CURRENT_SEASON) %}selected{% endif %}>
+            {{ season.label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-btns">
+      <button class="tab-btn{% if not show_results or request.args.get('side') == 'attack' %} active{% endif %}" id="atkTab">攻撃側</button>
+      <button class="tab-btn{% if show_results and request.args.get('side') == 'defense' %} active{% endif %}" id="defTab">防衛側</button>
+    </div>
+    <button class="clear-all-btn" id="clearAllBtn" title="編成を全クリア">
+      <span style="font-size:1.08em;">&#128465;</span> 全クリア
+    </button>
+  </div>
+  <div style="background:#f6f9fb;border-radius:14px;padding:24px 18px;margin-bottom:8px; border:1.5px solid #f7a7be;">
+    <div style="font-weight:bold;color:#eb6b92; margin-bottom:6px;">編成</div>
+    <form id="searchForm" method="get" action="{{ url_for('limited.search') }}">
+      <input type="hidden" name="side" id="sideInput" value="{{ request.args.get('side','attack') }}">
+      <input type="hidden" name="season" id="hiddenSeason" value="{{ request.args.get('season', CURRENT_SEASON) }}">
+      <!-- ▼▼▼ 射程・遮蔽セレクトボックス＋キャラ選択枠 ▼▼▼ -->
+<div class="defense-row-wrap">
+  <div class="condition-wrap" style="display: flex; justify-content: center; align-items: flex-start;">
+    <!-- 左ラベル -->
+    <div class="condition-side-labels" style="display: flex; flex-direction: column; justify-content: center; align-items: flex-end; margin-right: 10px;">
+      <div class="side-label">射程</div>
+      <div class="side-label">遮蔽</div>
+    </div>
+    <!-- セレクトボックス群 -->
+    <div id="conditionRow"></div>
+    <!-- 右ダミーラベル -->
+    <div class="condition-side-labels" style="display: flex; flex-direction: column; justify-content: center; align-items: flex-start; margin-left: 10px;">
+      <div class="side-label" style="visibility: hidden;">射程</div>
+      <div class="side-label" style="visibility: hidden;">遮蔽</div>
+    </div>
+  </div>
+  <div class="defense-row" id="defenseRow"></div>
+  <div class="slot-label-row" id="slotLabelRow"></div>
+</div>
+
+
+      <!-- ▲▲▲ 条件セレクトボックス＋キャラ欄 ▲▲▲ -->
+
+      <input type="hidden" name="c1" id="c1">
+      <input type="hidden" name="c2" id="c2">
+      <input type="hidden" name="c3" id="c3">
+      <input type="hidden" name="c4" id="c4">
+      <input type="hidden" name="c5" id="c5">
+      <input type="hidden" name="c6" id="c6">
+      <!-- ↓条件選択値もhiddenで送信する（ストライカーのみ） -->
+      <input type="hidden" name="r1" id="r1">
+      <input type="hidden" name="r2" id="r2">
+      <input type="hidden" name="r3" id="r3">
+      <input type="hidden" name="r4" id="r4">
+      <input type="hidden" name="s1" id="s1">
+      <input type="hidden" name="s2" id="s2">
+      <input type="hidden" name="s3" id="s3">
+      <input type="hidden" name="s4" id="s4">
+
+      <!-- 限定データだけ検索 チェックボックス -->
+      <div style="margin:12px 0 3px 0; display:flex; align-items:center;">
+        <label style="font-size:1.02em;user-select:none;">
+          <input type="checkbox" id="limitedOnlyCheckbox" name="only_limited" value="1"
+            {% if request.args.get('only_limited') in ['1', 'true', 'on'] %}checked{% endif %}
+            style="transform:scale(1.18);margin-right:6px;vertical-align:-2px;">
+          限定データだけ検索
+        </label>
+      </div>
+      <button type="submit" class="search-btn" id="searchBtn">この編成を検索</button>
+    </form>
+  </div>
+</div>
+{% if show_results %}
+  <div class="search-results-section" id="searchResultsSection">
+    <div class="search-result-title">検索結果一覧</div>
+    <div id="searchResults"></div>
+  </div>
+{% endif %}
+
+<!-- ▼▼▼ 直近アップロード表示（一般版recent-upload-panelを限定カラーで流用） ▼▼▼ -->
+{% if loser_teams is defined %}
+  <div class="recent-upload-panel" style="margin-top:28px;">
+    <div class="recent-upload-title">直近のアップロード</div>
+    <div class="recent-upload-list">
+      {% if loser_teams and loser_teams|length > 0 %}
+        {% for team in loser_teams %}
+          <div class="recent-upload-row">
+            <img class="side-icon-img" src="{{ team.side_icon }}" alt="{{ '攻撃側' if team.side == 'attack' else '防衛側' }}">
+            <img class="lose-icon-img" src="{{ team.lose_icon }}" alt="Lose">
+            <div class="char-list-img">
+              {% for ch in team.characters %}
+                {% if ch.image_url %}
+                  <img class="char-img" src="{{ ch.image_url }}" alt="{{ ch.name }}">
+                {% else %}
+                  <span class="char-img" style="background:#eee;border:1px solid #ddd;"></span>
+                {% endif %}
+              {% endfor %}
+            </div>
+            <span class="recent-date">{{ team.date }}</span>
+            <a class="btn-recent-search" href="{{ url_for('limited.search') }}?side={{ team.side }}{% for i in range(6) %}&c{{i+1}}={{ team.characters[i].name|urlencode }}{% endfor %}">
+              <svg width="1.2em" height="1.2em" style="margin-right:2px;vertical-align:-2px;" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="7" cy="7" r="6" stroke="#fff" stroke-width="2"/><rect x="11" y="11" width="4" height="2" rx="1" transform="rotate(45 11 11)" fill="#fff"/></svg>
+              検索
+            </a>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="color:#d878a8; padding:16px 0; text-align:center;">最近のアップロードがまだありません</div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+<!-- ▲▲▲ 直近アップロード表示ここまで ▲▲▲ -->
+
+<!-- ▼ info-panel（案内枠・フォーム下） ▼ -->
+<div class="info-panel" id="infoPanel">
+  このページでは、対抗戦の編成データを検索できます。<br><br>
+  ・枠をタップしてキャラを選択できます。<br>
+  ・キャラを削除したい場合は、枠内の「×」ボタンを押してください。<br>
+  ・キャラの並び順を変更したい場合は、枠をドラッグ＆ドロップで入れ替えできます。<br>
+  ・全クリアボタンで全ての枠をリセットできます。<br>
+  ・攻撃側・防衛側タブを切り替えて、どちらの編成でも検索できます。<br><br>
+  検索結果が表示されない場合は、条件を変えて再度お試しください。<br>
+  データは随時追加・更新されています。
+</div>
+
+<!-- キャラ選択モーダル -->
+<div class="modal-bg" id="modalBg">
+  <div class="char-modal">
+    <div class="modal-title" id="modalTitle">キャラを選択（1枠目）</div>
+    <input class="modal-search" id="modalSearch" placeholder="キャラ名で絞り込み">
+    <div class="char-list-grid" id="charListGrid"></div>
+    <div class="modal-actions">
+      <button class="modal-btn clear" id="modalClear">空に戻す</button>
+      <button class="modal-btn" id="modalCancel">キャンセル</button>
+      <button class="modal-btn ok" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer-custom">
+  ・運営/管理：作成者Twitter（<a href="https://twitter.com/BestM_JP" target="_blank" class="text-info fw-bold">@BestM_JP</a>）<br>
+  ・本サービスは個人による非公式ファンツールです
+</footer>
+
+<script>
+function kataToHira(str) {
+  return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+    return String.fromCharCode(match.charCodeAt(0) - 0x60);
+  });
+}
+function getParam(key) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(key);
+}
+
+// ▼ サイドバー動作
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const sidebar = document.getElementById('sidebar');
+const sidebarBg = document.getElementById('sidebar-bg');
+const closeSidebarBtn = document.getElementById('close-sidebar');
+hamburgerBtn.addEventListener('click', function () {
+  sidebar.classList.add('active');
+  sidebarBg.style.display = 'block';
+});
+closeSidebarBtn.addEventListener('click', closeSidebar);
+sidebarBg.addEventListener('click', closeSidebar);
+function closeSidebar() {
+  sidebar.classList.remove('active');
+  sidebarBg.style.display = 'none';
+}
+
+// ▼ シーズンプルダウンの値は検索ボタンを押したときだけhiddenSeasonに反映
+document.getElementById('searchForm').addEventListener('submit', function() {
+  document.getElementById('hiddenSeason').value = document.getElementById('seasonSelect').value;
+});
+
+// ▼ 射程・遮蔽オプション
+const rangeOptions = [
+  {value: "", label: "ー"},
+  {value: "350", label: "350"},
+  {value: "450", label: "450"},
+  {value: "550", label: "550"},
+  {value: "650", label: "650"},
+  {value: "750", label: "750"},
+  {value: "850", label: "850"},
+];
+const coverOptions = [
+  {value: "", label: "ー"},
+  {value: "1", label: "有"},
+  {value: "0", label: "無"},
+];
+
+// ▼ グローバル状態
+const strikerList = {{ striker_list | tojson }};
+const specialList = {{ special_list | tojson }};
+const atkLabels = ["A1", "A2", "A3", "A4", "ASP1", "ASP2"];
+const defLabels = ["D1", "D2", "D3", "D4", "DSP1", "DSP2"];
+let atkOrDef = getParam("side") === "defense" ? "防衛" : "攻撃";
+let defenseTeam = [null, null, null, null, null, null];
+// 射程・遮蔽用状態（4枠分のみ）
+let ranges = ["", "", "", ""];
+let covers = ["", "", "", ""];
+let currSlot = null;
+
+// ▼ 射程・遮蔽セレクト欄の描画
+function renderConditionRow() {
+  const row = document.getElementById("conditionRow");
+  row.innerHTML = "";
+  row.className = "condition-row";
+  for (let i = 0; i < 6; i++) {
+    const div = document.createElement("div");
+    div.className = "condition-cell";
+    if (i < 4) {
+      // ストライカーのみ射程・遮蔽
+      // 射程セレクト
+      const selR = document.createElement("select");
+      selR.className = "form-select";
+      selR.style.width = "76px";
+      selR.style.marginBottom = "4px";
+      rangeOptions.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt.value;
+        o.text = opt.label;
+        selR.appendChild(o);
+      });
+      selR.value = ranges[i];
+      selR.onchange = function() {
+        if (defenseTeam[i]) {
+          defenseTeam[i] = null;
+          renderDefenseRow();
+        }
+        ranges[i] = this.value;
+      };
+      div.appendChild(selR);
+
+      // 遮蔽セレクト
+      const selC = document.createElement("select");
+      selC.className = "form-select";
+      selC.style.width = "76px";
+      coverOptions.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt.value;
+        o.text = opt.label;
+        selC.appendChild(o);
+      });
+      selC.value = covers[i];
+      selC.onchange = function() {
+        if (defenseTeam[i]) {
+          defenseTeam[i] = null;
+          renderDefenseRow();
+        }
+        covers[i] = this.value;
+      };
+      div.appendChild(selC);
+    }
+    // 5,6枠目は空
+    row.appendChild(div);
+  }
+}
+
+function renderDefenseRow() {
+  const row = document.getElementById("defenseRow");
+  row.innerHTML = "";
+  defenseTeam.forEach((ch, idx) => {
+    const slot = document.createElement("div");
+    slot.className = "def-slot";
+    slot.setAttribute('data-index', idx);
+    slot.onclick = () => openModal(idx);
+    if (ch) {
+      slot.innerHTML = `<img src="${ch.image}" alt="${ch.name}"><button class="remove-icon" onclick="removeChar(event,${idx})">&times;</button>`;
+    } else {
+      slot.innerHTML = `<span class="empty-text" style="opacity:0.6;">EMPTY</span>`;
+    }
+    row.appendChild(slot);
+  });
+
+  // 並びラベル
+  const labelRow = document.getElementById("slotLabelRow");
+  labelRow.innerHTML = "";
+  const slotLabels = atkOrDef === "攻撃" ? atkLabels : defLabels;
+  slotLabels.forEach(label => {
+    const div = document.createElement("div");
+    div.className = "slot-label";
+    div.textContent = label;
+    labelRow.appendChild(div);
+  });
+
+  if (!row.sortableInitialized) {
+    new Sortable(row, {
+      animation: 180,
+      ghostClass: "dragging",
+      chosenClass: "dragging",
+      swap: true,
+      swapClass: "highlight-swap",
+      delay: 180,
+      delayOnTouchOnly: true,
+      onEnd: function (evt) {
+        const oldIndex = evt.oldIndex;
+        const newIndex = evt.newIndex;
+        if (oldIndex === newIndex) return;
+        const temp = defenseTeam[oldIndex];
+        defenseTeam[oldIndex] = defenseTeam[newIndex];
+        defenseTeam[newIndex] = temp;
+        renderDefenseRow();
+      }
+    });
+    row.sortableInitialized = true;
+  }
+}
+
+window.removeChar = function(e, idx) {
+  e.stopPropagation();
+  defenseTeam[idx] = null;
+  renderDefenseRow();
+};
+document.getElementById("clearAllBtn").onclick = function(e) {
+  e.preventDefault();
+  defenseTeam = [null, null, null, null, null, null];
+  ranges = ["", "", "", ""];
+  covers = ["", "", "", ""];
+  renderDefenseRow();
+  renderConditionRow();
+};
+
+document.getElementById("atkTab").onclick = () => {
+  atkOrDef = "攻撃";
+  document.getElementById("atkTab").classList.add("active");
+  document.getElementById("defTab").classList.remove("active");
+  renderDefenseRow();
+  renderConditionRow();
+};
+document.getElementById("defTab").onclick = () => {
+  atkOrDef = "防衛";
+  document.getElementById("defTab").classList.add("active");
+  document.getElementById("atkTab").classList.remove("active");
+  renderDefenseRow();
+  renderConditionRow();
+};
+
+// ▼ submit時、キャラ＋条件値をすべてhiddenにセットして送信
+document.getElementById("searchForm").onsubmit = function() {
+  for (let i = 0; i < 6; i++) {
+    document.getElementById("c" + (i+1)).value = defenseTeam[i] ? defenseTeam[i].name : "";
+  }
+  document.getElementById("sideInput").value = (atkOrDef === "攻撃" ? "attack" : "defense");
+  for (let i = 0; i < 4; i++) {
+    if (!document.getElementById(`r${i+1}`)) {
+      const inp = document.createElement('input');
+      inp.type = "hidden";
+      inp.name = `r${i+1}`;
+      inp.id = `r${i+1}`;
+      document.getElementById("searchForm").appendChild(inp);
+    }
+    if (!document.getElementById(`s${i+1}`)) {
+      const inp = document.createElement('input');
+      inp.type = "hidden";
+      inp.name = `s${i+1}`;
+      inp.id = `s${i+1}`;
+      document.getElementById("searchForm").appendChild(inp);
+    }
+    document.getElementById(`r${i+1}`).value = ranges[i];
+    document.getElementById(`s${i+1}`).value = covers[i];
+  }
+};
+
+function initFromParams() {
+  const params = new URLSearchParams(window.location.search);
+  atkOrDef = params.get("side") === "defense" ? "防衛" : "攻撃";
+  let charParams = [];
+  for (let i = 1; i <= 6; i++) {
+    charParams.push(params.get("c" + i) || "");
+  }
+  [0,1,2,3,4,5].forEach(idx => {
+    let name = charParams[idx];
+    if (!name) { defenseTeam[idx] = null; return; }
+    let pool = idx <= 3 ? strikerList : specialList;
+    let found = pool.find(c => c.name === name);
+    defenseTeam[idx] = found || null;
+  });
+  for (let i = 0; i < 4; i++) {
+    ranges[i] = params.get("r"+(i+1)) || "";
+    covers[i] = params.get("s"+(i+1)) || "";
+  }
+}
+
+window.onload = () => {
+  initFromParams();
+  renderConditionRow();
+  renderDefenseRow();
+  document.getElementById("atkTab").classList.toggle("active", atkOrDef === "攻撃");
+  document.getElementById("defTab").classList.toggle("active", atkOrDef === "防衛");
+  // シーズンプルダウン値をGETパラメータまたはCURRENT_SEASONで初期化
+  const seasonValue = getParam('season') || "{{ CURRENT_SEASON }}";
+  document.getElementById('seasonSelect').value = seasonValue;
+  document.getElementById('hiddenSeason').value = seasonValue;
+  {% if show_results %}
+    doSearchFromParams();
+  {% endif %}
+};
+
+const modalBg = document.getElementById("modalBg");
+let selectedChar = null;
+let lastSelectedCharName = null;
+let lastSelectedTime = 0;
+function openModal(idx) {
+  currSlot = idx;
+  document.getElementById("modalTitle").innerText = `キャラを選択（${idx+1}枠目）`;
+  document.getElementById("modalSearch").value = "";
+  selectedChar = defenseTeam[idx];
+  lastSelectedCharName = selectedChar ? selectedChar.name : null;
+  lastSelectedTime = 0;
+  renderCharList();
+  modalBg.classList.add("active");
+}
+function closeModal() {
+  modalBg.classList.remove("active");
+  selectedChar = null;
+}
+function renderCharList() {
+  const grid = document.getElementById("charListGrid");
+  const filter = document.getElementById("modalSearch").value.trim();
+  grid.innerHTML = "";
+  let candidates;
+  if (currSlot <= 3) {
+    candidates = strikerList;
+  } else {
+    candidates = specialList;
+  }
+  const filterText = kataToHira(filter);
+  candidates
+    .filter(c => {
+      // 現在選択中のキャラは除外せずに候補に出す（自分のスロットだけ除外）
+      if (selectedChar && selectedChar.name === c.name) return true;
+      return !defenseTeam.some((ch, idx) => ch && ch.name === c.name && idx !== currSlot);
+    })
+    .filter(c => kataToHira(c.name).includes(filterText))
+    .forEach(c => {
+      const div = document.createElement("div");
+      div.className = "char-item" + (selectedChar && selectedChar.name === c.name ? " selected" : "");
+      div.innerHTML = `<img class="char-img" src="${c.image}" alt="${c.name}">`;
+      div.onclick = () => {
+        if (selectedChar && selectedChar.name === c.name) {
+          defenseTeam[currSlot] = c;
+          // 射程・遮蔽リセット（排他）
+          if (currSlot <= 3) {
+            ranges[currSlot] = "";
+            covers[currSlot] = "";
+            renderConditionRow();
+          }
+          closeModal();
+          renderDefenseRow();
+        } else {
+          selectedChar = c;
+          lastSelectedCharName = c.name;
+          lastSelectedTime = Date.now();
+          renderCharList();
+        }
+      };
+      grid.appendChild(div);
+    });
+}
+document.getElementById("modalSearch").oninput = renderCharList;
+document.getElementById("modalOk").onclick = () => {
+  defenseTeam[currSlot] = selectedChar;
+  if (currSlot <= 3) {
+    ranges[currSlot] = "";
+    covers[currSlot] = "";
+    renderConditionRow();
+  }
+  closeModal();
+  renderDefenseRow();
+};
+document.getElementById("modalCancel").onclick = () => closeModal();
+document.getElementById("modalClear").onclick = () => {
+  defenseTeam[currSlot] = null;
+  closeModal();
+  renderDefenseRow();
+};
+
+// ▼ 条件・キャラ両方空なら検索なし、片方でも指定あればAPI検索
+async function doSearchFromParams() {
+  const side = getParam("side") === "defense" ? "defense" : "attack";
+  const charNames = [];
+  const apiRanges = [];
+  const apiCovers = [];
+  for (let i = 1; i <= 6; i++) {
+    charNames.push(getParam("c" + i) || "");
+    if (i <= 4) {
+      apiRanges.push(getParam("r" + i) || "");
+      apiCovers.push(getParam("s" + i) || "");
+    }
+  }
+  const onlyLimited = (
+    getParam("only_limited") === "1" ||
+    getParam("only_limited") === "true" ||
+    getParam("only_limited") === "on"
+  );
+  const season = getParam("season") || "{{ CURRENT_SEASON }}";
+  // キャラ欄も条件欄も空なら該当なし
+  if (
+    charNames.filter(x => !!x).length === 0 &&
+    apiRanges.filter(x => !!x).length === 0 &&
+    apiCovers.filter(x => !!x).length === 0
+  ) {
+    document.getElementById("searchResults").innerHTML = "<div style='color:#888;font-size:1.08em;padding:28px 0;'>該当データが存在しません</div>";
+    return;
+  }
+  const res = await fetch("{{ url_for('limited.api_search') }}", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      side: side,
+      characters: charNames,
+      ranges: apiRanges,
+      covers: apiCovers,
+      only_limited: onlyLimited,
+      season: season
+    })
+  });
+  const data = await res.json();
+  showSearchResults(data.results || []);
+}
+function showSearchResults(results) {
+  const section = document.getElementById("searchResultsSection");
+  const container = document.getElementById("searchResults");
+  section.style.display = "block";
+  container.innerHTML = "";
+  if (!results || results.length === 0) {
+    container.innerHTML = "<div style='color:#888;font-size:1.08em;padding:28px 0;'>該当データが存在しません</div>";
+    return;
+  }
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  results.forEach(res => {
+    const winnerSideIcon = res.winner_icon ? `<img class="side-icon" src="${res.winner_icon}" alt="side">` : "";
+    const winnerWinloseIcon = res.winner_winlose_icon ? `<img class="winlose-icon" src="${res.winner_winlose_icon}" alt="勝敗">` : "";
+    const loserSideIcon  = res.loser_icon ? `<img class="side-icon" src="${res.loser_icon}" alt="side">` : "";
+    const loserWinloseIcon  = res.loser_winlose_icon ? `<img class="winlose-icon" src="${res.loser_winlose_icon}" alt="勝敗">` : "";
+    const winnerChars = res.winner_characters?.map(name => charImageTag(name)).join('') || "";
+    const loserChars  = res.loser_characters?.map(name => charImageTag(name)).join('') || "";
+    const dateTag = res.date ? `<div class="result-date">${res.date}</div>` : "";
+    if (isMobile) {
+      container.innerHTML += `
+        <div class="result-row">
+          <div class="team-block">
+            ${winnerSideIcon}${winnerWinloseIcon}
+            <div class="char-row left-row">${winnerChars}</div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-mark">VS</div>
+          </div>
+          <div class="team-block">
+            ${loserSideIcon}${loserWinloseIcon}
+            <div class="char-row right-row">${loserChars}</div>
+          </div>
+          ${dateTag}
+        </div>
+      `;
+    } else {
+      container.innerHTML += `
+        <div class="result-row">
+          <div class="side-col left-col">
+            <div class="side-main">
+              ${winnerSideIcon}${winnerWinloseIcon}
+              <div class="char-row left-row">${winnerChars}</div>
+            </div>
+            <div class="left-bottom"></div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-mark">VS</div>
+            <div class="vs-dummy"></div>
+          </div>
+          <div class="side-col right-col">
+            <div class="right-main-center">
+              <div class="right-block">
+                ${loserSideIcon}${loserWinloseIcon}
+                <div class="char-row right-row">${loserChars}</div>
+              </div>
+            </div>
+            ${dateTag}
+          </div>
+        </div>
+      `;
+    }
+  });
+}
+function charImageTag(name) {
+  if (!name) return `<span style="width:39px;height:39px;display:inline-block;"></span>`;
+  let all = strikerList.concat(specialList);
+  let found = all.find(c => c.name === name);
+  if (found && found.image) {
+    return `<img class="char-img" src="${found.image}" alt="${name}">`;
+  } else {
+    return `<span class="char-img" style="background:#eee;border:1px solid #ddd;"></span>`;
+  }
+}
+</script>
+</body>
+</html>

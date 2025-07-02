@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow">
+  <title>攻略Tips一覧 - BlueArchive対抗戦DB</title>
+  <meta name="google-site-verification" content="4GMC-Y_YcFE5giRV5RQjmObgAuhmClSSKmrSs333ZFY" />
+  <meta name="google-site-verification" content="5jdGgzQ9EcR6LwSRfCz2ONeqcsCQ9Cvhrw0Wylp1DcA" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-64P3RM78K2"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-64P3RM78K2');
+  </script>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js?client=ca-pub-7051331824444850"
+     crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ブルーアーカイブ（ブルアカ）戦術対抗戦の編成・勝敗データベース。編成ログの検索・アップロードが可能。ユーザー協力型のファンツールです。">
+  <meta name="keywords" content="ブルーアーカイブ,ブルアカ,対抗戦,編成,DB,検索,勝敗,データベース,アップロード">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #e4f2fd 0%, #f7fafd 100%);
+      min-height: 100vh;
+      font-family: "Segoe UI", "ヒラギノ角ゴ ProN", "Meiryo", sans-serif;
+      padding-top: 70px;
+    }
+    .container-tips {
+      max-width: 800px;
+      margin: 42px auto 32px auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(50,80,160,0.09);
+      padding: 28px 20px 22px 20px;
+    }
+    .tips-title {
+      font-size: 2.1em;
+      font-weight: bold;
+      color: #338eda;
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+    }
+    .tips-desc {
+      color: #3978ad;
+      font-size: 1.09em;
+      margin-bottom: 28px;
+    }
+    .tips-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .tips-item {
+      background: #f5faff;
+      border: 1.5px solid #cbe5fd;
+      border-radius: 13px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px #c8e3fa19;
+      padding: 18px 18px 15px 18px;
+      transition: box-shadow .16s;
+    }
+    .tips-item:hover {
+      box-shadow: 0 8px 24px #a3d1f526;
+    }
+    .tips-link {
+      color: #2277bb;
+      text-decoration: none;
+      font-size: 1.19em;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+      transition: color .14s, text-decoration .12s;
+    }
+    .tips-link:hover {
+      color: #338eda;
+      text-decoration: underline;
+    }
+    .tips-summary {
+      font-size: 1.03em;
+      color: #6788a7;
+      margin-top: 7px;
+    }
+    .back-btn {
+      display: inline-block;
+      background: #338eda;
+      color: #fff;
+      border-radius: 9px;
+      padding: 8px 30px;
+      font-size: 1.08em;
+      font-weight: bold;
+      text-decoration: none;
+      margin-top: 16px;
+      transition: background .13s, color .13s;
+      box-shadow: 0 2px 8px #8fc8f426;
+      border: none;
+    }
+    .back-btn:hover {
+      background: #22639b;
+      color: #fff;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-tips">
+    <div class="tips-title">攻略Tips・コラム一覧</div>
+    <div class="tips-desc">
+      戦術対抗戦に関する各種攻略コラムをまとめています。<br>
+    </div>
+    <ul class="tips-list">
+      <!-- 各記事は必ず 'limited' BlueprintでのURLにする -->
+      <li class="tips-item">
+        <a class="tips-link" href="{{ url_for('limited.tips_character_growth') }}">
+          編成を再現しても勝てない？キャラ育成・データ活用の実践ポイント
+        </a>
+        <div class="tips-summary">
+          「同じ編成を使っているのに勝てない…」そんな悩みを持つ方へ。
+        </div>
+      </li>
+      <!-- 今後はここに <li>…</li> をどんどん追加（同じくurl_forで） -->
+    </ul>
+    <a href="{{ url_for('limited.index') }}" class="back-btn">トップページへ戻る</a>
+  </div>
+</body>
+</html>
