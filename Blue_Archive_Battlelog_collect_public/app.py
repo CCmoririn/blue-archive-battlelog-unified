@@ -27,15 +27,7 @@ app = Flask(__name__)
 
 app.register_blueprint(vote_api)
 
-NEW_DOMAIN = "bluearchive-battlelog-p.com"  # 新ドメイン名のみ
 
-@app.before_request
-def redirect_to_custom_domain():
-    if "onrender.com" in request.host:
-        new_url = request.url.replace(request.host, NEW_DOMAIN)
-        if not new_url.startswith("https://"):
-            new_url = "https://" + new_url.split("://", 1)[-1]
-        return redirect(new_url, code=301)
 
 if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
     print("GOOGLE_APPLICATION_CREDENTIALS not found in environment variables.")
