@@ -1,5 +1,7 @@
+setuptools
+wheel
 Flask==2.3.2
-werkzeug        # Flaskとセットで大丈夫（特にバージョン指定なければ最新）
+werkzeug
 gspread==5.11.2
 oauth2client
 requests==2.31.0
@@ -9,5 +11,3 @@ google-cloud-vision==3.3.1
 google-auth==2.23.3
 gunicorn==20.1.0
 python-dotenv==1.0.1
-setuptools
-wheel
