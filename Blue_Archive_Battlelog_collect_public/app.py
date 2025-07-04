@@ -25,6 +25,14 @@ from defense_suggester import suggest_defense_teams, suggest_team_for_template
 
 app = Flask(__name__)
 
+
+@app.before_request
+def remove_www():
+    if request.host.startswith("www."):
+        new_url = request.url.replace("://www.", "://", 1)
+        return redirect(new_url, code=301)
+
+
 app.register_blueprint(vote_api)
 
 
@@ -307,6 +315,7 @@ def defense_suggest():
     strict_pos = bool(request.form.get("strict_pos")) if request.method == "POST" else False
 
     if request.method == "POST":
+        # ★ここでprintでデバッグ！
         for i in range(5):
             print([request.form.get(f"attack_{i}_{j}", "") for j in range(6)])
         try:
