@@ -6,7 +6,10 @@ import sys
 import unicodedata
 import subprocess
 import requests
-from flask import Flask, request, render_template, jsonify, redirect, url_for, send_from_directory
+from flask import (
+    Flask, request, render_template, jsonify, redirect, url_for,
+    send_from_directory, Response
+)
 from spreadsheet_manager import (
     update_spreadsheet,
     get_striker_list_from_sheet,
@@ -369,6 +372,7 @@ def api_template_detail():
         print(f"/api/template_detail エラー: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/privacy.html")
 def privacy():
     return render_template("privacy.html")
@@ -381,9 +385,14 @@ def guide():
 def tips():
     return render_template('tips.html')
 
-@app.route('/tips/character-growth')
-def tips_character_growth():
-    return render_template('character-growth.html')
+# ここからTips記事（article01～article15）への個別ルート
+for i in range(1, 16):
+    route_path = f"/tips/article{str(i).zfill(2)}"
+    template_name = f"tips_article{str(i).zfill(2)}.html"
+    def _tips_article(template_name=template_name):
+        return render_template(template_name)
+    _tips_article.__name__ = f"tips_article_{i:02d}"
+    app.add_url_rule(route_path, view_func=_tips_article)
 
 @app.route("/contact.html")
 def contact():
@@ -395,7 +404,6 @@ def ads_txt():
 
 @app.route("/sitemap.xml", methods=["GET"])
 def sitemap():
-    from flask import Response
     xml = '''<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -430,13 +438,17 @@ def sitemap():
     <loc>https://bluearchive-battlelog-p.com/upload</loc>
     <lastmod>2025-06-23</lastmod>
   </url>
-</urlset>'''
+  <!-- Tips記事個別URLも追加 -->
+''' + '\n'.join([
+    f'''  <url>
+    <loc>https://bluearchive-battlelog-p.com/tips/article{str(i).zfill(2)}</loc>
+    <lastmod>2025-08-01</lastmod>
+  </url>''' for i in range(1, 16)
+]) + "\n</urlset>"
     return Response(xml, mimetype='application/xml')
-
 
 @app.route("/robots.txt")
 def robots():
-    from flask import Response
     content = """User-agent: *
 Disallow: /limited/
 Disallow: /limited
