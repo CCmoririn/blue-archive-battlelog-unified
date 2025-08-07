@@ -73,6 +73,21 @@
 </header>
   <!-- ▲▲ ヘッダー・サイドバーここまで ▲▲ -->
 
+<!-- 横長2・フッター直後推奨：中央寄せ＋デザイン崩れ防止 -->
+<div style="width:100%; display:flex; justify-content:center; margin:16px 0;">
+  <ins class="adsbygoogle"
+       style="display:block; width:100%; max-width:900px; min-width:280px; height:120px;"
+       data-ad-client="ca-pub-7051331824444850"
+       data-ad-slot="4127495344"
+       data-ad-format="horizontal"
+       data-full-width-responsive="true"></ins>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7051331824444850" crossorigin="anonymous"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+
 {% set show_results = request.args.get('side') is not none %}
 
 <div class="main-card">
@@ -146,6 +161,8 @@
       <button type="submit" class="search-btn" id="searchBtn">この編成を検索</button>
     </form>
     <div id="infoPanelWarn" style="color:#da2222;font-size:1.08em;margin-top:8px;display:none;"></div>
+
+{# 並び替え部分の一時コメントアウト開始
     <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:6px;">
       <label for="sortSelect" style="font-weight:bold;margin-right:6px;">並び替え</label>
       <select id="sortSelect" class="form-select" style="width:auto;display:inline-block;">
@@ -154,6 +171,8 @@
         <option value="good">グッド数順</option>
       </select>
   </div>
+#} 
+
 </div>
 <!-- ▼▼▼ 直近アップロード表示（indexと同じ枠・Jinja2で） ▼▼▼ -->
 {% if show_results %}
@@ -197,6 +216,23 @@
   </div>
 {% endif %}
 <!-- ▲▲▲ 直近アップロード表示ここまで ▲▲▲ -->
+
+
+<!-- 横長2・フッター直後推奨：中央寄せ＋デザイン崩れ防止 -->
+<div style="width:100%; display:flex; justify-content:center; margin:16px 0;">
+  <ins class="adsbygoogle"
+       style="display:block; width:100%; max-width:900px; min-width:280px; height:120px;"
+       data-ad-client="ca-pub-7051331824444850"
+       data-ad-slot="4127495344"
+       data-ad-format="horizontal"
+       data-full-width-responsive="true"></ins>
+</div>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7051331824444850" crossorigin="anonymous"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+
 
 <!-- ▼ info-panel（案内枠・フォーム下） ▼ -->
 <div class="info-panel" id="infoPanel">
