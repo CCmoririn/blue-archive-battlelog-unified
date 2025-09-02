@@ -38,8 +38,6 @@ def remove_www():
 
 app.register_blueprint(vote_api)
 
-
-
 if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
     print("GOOGLE_APPLICATION_CREDENTIALS not found in environment variables.")
 
@@ -355,6 +353,11 @@ def defense_suggest():
         attack_teams=attack_teams
     )
 
+# ▼▼ notices（お知らせ一覧ページ） ▼▼
+@app.route("/notices")
+def notices():
+    return render_template("notices.html")
+
 # ▼▼▼ テンプレ決定過程テーブルAPI ▼▼▼
 @app.route("/api/template_detail", methods=["POST"])
 def api_template_detail():
@@ -385,7 +388,7 @@ def guide():
 def tips():
     return render_template('tips.html')
 
-# ここからTips記事（article01～article15）への個別ルート
+# Tips記事（article01～article15）
 for i in range(1, 16):
     route_path = f"/tips/article{str(i).zfill(2)}"
     template_name = f"tips_article{str(i).zfill(2)}.html"
@@ -404,56 +407,30 @@ def ads_txt():
 
 @app.route("/sitemap.xml", methods=["GET"])
 def sitemap():
+    # ★ Tipsは除外。/notices は掲載して公開維持
     xml = '''<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/</loc>
-    <lastmod>2025-06-23</lastmod>
-  </url>
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/contact</loc>
-    <lastmod>2025-06-23</lastmod>
-  </url>
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/search</loc>
-    <lastmod>2025-06-23</lastmod>
-  </url>
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/defense_suggest</loc>
-    <lastmod>2025-06-23</lastmod>
-  </url>
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/guide</loc>
-    <lastmod>2025-06-23</lastmod>
-  </url>
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/notices</loc>
-    <lastmod>2025-06-15</lastmod>
-  </url>
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/privacy</loc>
-    <lastmod>2025-06-23</lastmod>
-  </url>
-  <url>
-    <loc>https://bluearchive-battlelog-p.com/upload</loc>
-    <lastmod>2025-06-23</lastmod>
-  </url>
-  <!-- Tips記事個別URLも追加 -->
-''' + '\n'.join([
-    f'''  <url>
-    <loc>https://bluearchive-battlelog-p.com/tips/article{str(i).zfill(2)}</loc>
-    <lastmod>2025-08-01</lastmod>
-  </url>''' for i in range(1, 16)
-]) + "\n</urlset>"
+  <url><loc>https://bluearchive-battlelog-p.com/</loc><lastmod>2025-06-23</lastmod></url>
+  <url><loc>https://bluearchive-battlelog-p.com/contact.html</loc><lastmod>2025-06-23</lastmod></url>
+  <url><loc>https://bluearchive-battlelog-p.com/search</loc><lastmod>2025-06-23</lastmod></url>
+  <url><loc>https://bluearchive-battlelog-p.com/defense_suggest</loc><lastmod>2025-06-23</lastmod></url>
+  <url><loc>https://bluearchive-battlelog-p.com/guide</loc><lastmod>2025-06-23</lastmod></url>
+  <url><loc>https://bluearchive-battlelog-p.com/notices</loc><lastmod>2025-08-22</lastmod></url>
+  <url><loc>https://bluearchive-battlelog-p.com/privacy.html</loc><lastmod>2025-06-23</lastmod></url>
+  <url><loc>https://bluearchive-battlelog-p.com/upload</loc><lastmod>2025-06-23</lastmod></url>
+</urlset>'''
     return Response(xml, mimetype='application/xml')
 
 @app.route("/robots.txt")
 def robots():
+    # ★ Tips配下はクロール対象外（ダミー保護）
     content = """User-agent: *
 Disallow: /limited/
 Disallow: /limited
 Disallow: /upload/confirm
 Disallow: /upload/complete
+Disallow: /tips
+Disallow: /tips/
 
 Allow: /
 
@@ -461,8 +438,6 @@ Sitemap: https://bluearchive-battlelog-p.com/sitemap.xml
 """
     return Response(content, mimetype="text/plain")
 
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
