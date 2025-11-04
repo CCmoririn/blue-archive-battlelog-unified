@@ -2,11 +2,11 @@
 # シーズン分割・シート/キャッシュ一元管理用
 
 # 現行シーズン（シート名/キャッシュ名に完全一致）
-CURRENT_SEASON = "s9"
+CURRENT_SEASON = "s10"
 
 # 利用可能な全シーズンリスト
 SEASON_LIST = [
-    {"key": "s9", "label": "s9"},
+    {"key": "s9", "label": "s9"},{"key": "s10", "label": "s10"},
     # 必要に応じて追加
 ]
 
