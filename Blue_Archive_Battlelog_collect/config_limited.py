@@ -6,7 +6,7 @@ CURRENT_SEASON = "s10"
 
 # 利用可能な全シーズンリスト
 SEASON_LIST = [
-    {"key": "s9", "label": "s9"},{"key": "s10", "label": "s10"},
+    {"key": "s9", "label": "s9"},{"key": "s10", "label": "s10"},{"key": "s11", "label": "s11"},
     # 必要に応じて追加
 ]
 

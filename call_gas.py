@@ -6,7 +6,7 @@ from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request
 
 # --- シーズン名をコマンドライン引数から取得（なければ's9'） ---
-season = sys.argv[1] if len(sys.argv) > 1 else "s10"
+season = sys.argv[1] if len(sys.argv) > 1 else "s11"
 
 # 環境変数 'credentials' にサービスアカウントキー JSON 全文を設定している前提
 credentials_content = os.environ.get("credentials")
