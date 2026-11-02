@@ -164,10 +164,21 @@ for _ in range(12):
         self.assertEqual(self.store(sheet).fetch("s11", expected_id="21")["ID"], "21")
 
     def test_fetch_rejects_ambiguous_or_missing_id(self):
-        sheet = FakeSheet(["ID"], [["21"], ["21"]])
+        sheet = FakeSheet(["ID", "A1"], [["21", "ユウカ"], ["21", "シュン"]])
         for identifier in ("21", "22"):
             with self.assertRaises(RuntimeError):
                 self.store(sheet).fetch("s11", expected_id=identifier)
+
+    def test_identical_existing_duplicates_are_collapsed_without_changing_sheets(self):
+        sheet = FakeSheet(["ID", "A1", "GOOD", "BAD"], [["21", "ユウカ", "5", "0"], ["21", "ユウカ", "0", "0"]])
+        store = self.store(sheet)
+        store.save("s11", [{"ID": "21", "A1": "ユウカ", "GOOD": "5", "BAD": "0"},
+                            {"ID": "21", "A1": "ユウカ", "GOOD": "0", "BAD": "0"}])
+        self.assertEqual(len(store.get("s11")), 1)
+        self.assertEqual(store.fetch("s11", expected_id="21")["GOOD"], "5")
+        self.assertTrue(store.vote("21", "GOOD", 1))
+        self.assertEqual(sheet.updates, [(3, 3, "6")])
+        self.assertEqual(len(sheet.values), 4, "no remote duplicate rows are deleted")
 
     def test_insert_allocates_id_and_preserves_raw_cell_values(self):
         headers = [f"field{i}" for i in range(18)] + ["", "ID", "GOOD", "BAD"]
@@ -198,7 +209,14 @@ for _ in range(12):
     def test_vote_rejects_duplicate_ids_without_writing(self):
         sheet = FakeSheet(["ID", "GOOD"], [["1", "8"]])
         store = self.store(sheet)
-        store.save("s11", [{"ID": "1"}, {"ID": "1"}])
+        store.save("s11", [{"ID": "1", "A1": "ユウカ"}, {"ID": "1", "A1": "シュン"}])
+        self.assertFalse(store.vote("1", "GOOD", 1))
+        self.assertFalse(sheet.updates)
+
+    def test_vote_rejects_a_record_changed_since_the_cached_search(self):
+        sheet = FakeSheet(["ID", "A1", "GOOD"], [["1", "シュン", "8"]])
+        store = self.store(sheet)
+        store.save("s11", [{"ID": "1", "A1": "ユウカ", "GOOD": "1"}])
         self.assertFalse(store.vote("1", "GOOD", 1))
         self.assertFalse(sheet.updates)
 

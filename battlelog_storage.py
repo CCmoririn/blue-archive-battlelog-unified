@@ -43,12 +43,27 @@ def records_from_values(rows, head_row=2):
             for row in rows[head_row:] if any(row)]
 
 
+def record_signature(row):
+    # Ignore counters and local metadata; absent and trailing blank cells agree.
+    return tuple(sorted((str(key), str(value)) for key, value in row.items()
+                        if key not in ("GOOD", "BAD", "source") and not str(key).startswith("_")
+                        and value is not None and value != ""))
+
+
 def row_key(row):
-    if row.get("ID"):
-        return ("id", str(row.get("source", "")), str(row["ID"]))
-    keys = ("日付", "プレイヤー名", "勝敗", "A1", "A2", "A3", "A4", "ASP1", "ASP2",
-            "プレイヤー名_2", "勝敗_2", "D1", "D2", "D3", "D4", "DSP1", "DSP2", "source")
-    return ("row",) + tuple(str(row.get(key, "")) for key in keys)
+    return (str(row.get("source", "")), record_signature(row))
+
+
+def canonical_rows(rows):
+    """Collapse only identical ID/content pairs, retaining the first row's votes."""
+    result, seen = [], set()
+    for row in rows:
+        key = row_key(row)
+        # Missing IDs are not proof of a duplicate match.
+        if not row.get("ID") or key not in seen:
+            result.append(row)
+            seen.add(key)
+    return result
 
 
 def parse_date(row):
@@ -90,10 +105,10 @@ class SheetStore:
         season = self.season(season)
         rows = self.load(season)
         if rows is not None:
-            return rows
+            return canonical_rows(rows)
         with file_lock("sheets"):
             rows = self.load(season)
-            return self.refresh(season) if rows is None else rows
+            return self.refresh(season) if rows is None else canonical_rows(rows)
 
     def refresh(self, season=None):
         season = self.season(season)
@@ -129,6 +144,7 @@ class SheetStore:
             for row in previous:
                 if row.get("_cache_only") and row_key(row) not in known:
                     rows.append(row)
+            rows = canonical_rows(rows)
             rows.sort(key=parse_date, reverse=True)
             self.save(season, rows)
             return rows
@@ -164,7 +180,7 @@ class SheetStore:
     def fetch(self, season=None, expected_id=None, expected_row=None):
         season = self.season(season)
         worksheet = self.sheet(self.output_env, f"出力結果_{season}")
-        rows = records_from_values(worksheet.get_all_values())
+        rows = canonical_rows(records_from_values(worksheet.get_all_values()))
         if expected_id is not None:
             matches = [row for row in rows if str(row.get("ID", "")) == str(expected_id)]
             if len(matches) != 1:
@@ -209,9 +225,16 @@ class SheetStore:
             id_col, vote_col = headers.index("ID"), headers.index(vote_type)
             positions = [(index, row) for index, row in enumerate(values[2:], 3)
                          if len(row) > id_col and str(row[id_col]) == str(row_id)]
-            if len(positions) != 1:
+            if not positions:
                 return False
+            if len(positions) > 1:
+                signatures = {record_signature(records_from_values([[""], headers, row])[0])
+                              for _, row in positions}
+                if len(signatures) != 1:
+                    return False
             position, row = positions[0]
+            if record_signature(records_from_values([[""], headers, row])[0]) != record_signature(matches[0]):
+                return False
             count = max(0, nonnegative_int(row[vote_col] if len(row) > vote_col else 0) + delta)
             # Sheets is authoritative. A failed request must not alter local counts.
             worksheet.update_cell(position, vote_col + 1, str(count))
