@@ -969,7 +969,7 @@ body {
           }
           const strictPos = document.getElementById("strict_pos_chk").checked;
           const season = document.querySelector('[name="season"]').value;
-          fetch("/api/template_detail", {
+          fetch("{{ url_for('limited.api_template_detail') }}", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

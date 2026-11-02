@@ -666,22 +666,25 @@ async function doSearchFromParams() {
     document.getElementById("searchResults").innerHTML = "<div style='color:#888;font-size:1.08em;padding:28px 0;'>該当データが存在しません</div>";
     return;
   }
-  const res = await fetch("/api/search", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      side: side,
-      characters: charNames,
-      ranges: ranges,
-      covers: covers,
-      season: season
-    })
-  });
-  const data = await res.json();
-  showSearchResults(data.results || []);
+  try {
+    const res = await fetch("/api/search", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({side, characters: charNames, ranges, covers, season})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "検索できませんでした。しばらくしてからお試しください。");
+    showSearchResults(data.results || [], season);
+  } catch (error) {
+    document.getElementById("searchResults").textContent = error.message || "検索できませんでした。しばらくしてからお試しください。";
+  }
 }
 
-function showSearchResults(results) {
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]));
+}
+
+function showSearchResults(results, season) {
   const section = document.getElementById("searchResultsSection");
   const container = document.getElementById("searchResults");
   section.style.display = "block";
@@ -693,38 +696,39 @@ function showSearchResults(results) {
   }
 
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
-  results.forEach(res => {
-    const row_id = res.row_id || res.ID || res.id;
+  results.forEach((res, resultIndex) => {
+    const rawId = String(res.row_id || res.ID || res.id || "");
+    const row_id = /^\d+$/.test(rawId) ? rawId : "";
     const good_count = parseInt(res.good_count ?? res.GOOD ?? 0);
     const bad_count = parseInt(res.bad_count ?? res.BAD ?? 0);
 
-    const winnerSideIcon = res.winner_icon ? `<img class="side-icon" src="${res.winner_icon}" alt="side">` : "";
-    const winnerWinloseIcon = res.winner_winlose_icon ? `<img class="winlose-icon" src="${res.winner_winlose_icon}" alt="勝敗">` : "";
-    const loserSideIcon  = res.loser_icon ? `<img class="side-icon" src="${res.loser_icon}" alt="side">` : "";
-    const loserWinloseIcon  = res.loser_winlose_icon ? `<img class="winlose-icon" src="${res.loser_winlose_icon}" alt="勝敗">` : "";
+    const winnerSideIcon = res.winner_icon ? `<img class="side-icon" src="${escapeHtml(res.winner_icon)}" alt="side">` : "";
+    const winnerWinloseIcon = res.winner_winlose_icon ? `<img class="winlose-icon" src="${escapeHtml(res.winner_winlose_icon)}" alt="勝敗">` : "";
+    const loserSideIcon  = res.loser_icon ? `<img class="side-icon" src="${escapeHtml(res.loser_icon)}" alt="side">` : "";
+    const loserWinloseIcon  = res.loser_winlose_icon ? `<img class="winlose-icon" src="${escapeHtml(res.loser_winlose_icon)}" alt="勝敗">` : "";
     const winnerChars = res.winner_characters?.map(name => charImageTag(name)).join('') || "";
     const loserChars  = res.loser_characters?.map(name => charImageTag(name)).join('') || "";
-    const dateTag = res.date ? `<div class="result-date">${res.date}</div>` : "";
+    const dateTag = res.date ? `<div class="result-date">${escapeHtml(res.date)}</div>` : "";
 
     // ▼ 投票ボタンUI
-    const voteSection = `
+    const voteSection = row_id ? `
       <div class="vote-section">
-        <button class="vote-btn" data-row-id="${row_id}" data-type="good" id="btn_good_${row_id}">
+        <button class="vote-btn" data-row-id="${row_id}" data-season="${escapeHtml(season)}" data-type="good" id="btn_good_${row_id}">
           <span class="material-symbols-outlined vote-icon good-icon">thumb_up</span>
         </button>
         <span class="vote-count" id="count_good_${row_id}">${good_count}</span>
-        <button class="vote-btn" data-row-id="${row_id}" data-type="bad" id="btn_bad_${row_id}">
+        <button class="vote-btn" data-row-id="${row_id}" data-season="${escapeHtml(season)}" data-type="bad" id="btn_bad_${row_id}">
           <span class="material-symbols-outlined vote-icon bad-icon">thumb_down</span>
         </button>
         <span class="vote-count" id="count_bad_${row_id}">${bad_count}</span>
       </div>
-    `;
+    ` : "";
 
     // ▼ 行にdata属性（ソート用）
     if (isMobile) {
       // スマホは従来通り右下にvoteSection（必要ならここも調整可能）
       container.innerHTML += `
-        <div class="result-row" data-row-id="${row_id}" data-good="${good_count}" data-bad="${bad_count}">
+        <div class="result-row" data-order="${resultIndex}" data-row-id="${row_id}" data-good="${good_count}" data-bad="${bad_count}">
           <div class="team-block">
             ${winnerSideIcon}${winnerWinloseIcon}
             <div class="char-row left-row">${winnerChars}</div>
@@ -743,7 +747,7 @@ function showSearchResults(results) {
     } else {
       // PCは「左編成の下」にvoteSection、「右下」にdateTag
       container.innerHTML += `
-        <div class="result-row" data-row-id="${row_id}" data-good="${good_count}" data-bad="${bad_count}">
+        <div class="result-row" data-order="${resultIndex}" data-row-id="${row_id}" data-good="${good_count}" data-bad="${bad_count}">
           <div class="side-col left-col">
             <div class="side-main">
               ${winnerSideIcon}${winnerWinloseIcon}
@@ -780,7 +784,7 @@ function charImageTag(name) {
   let all = strikerList.concat(specialList);
   let found = all.find(c => c.name === name);
   if (found && found.image) {
-    return `<img class="char-img" src="${found.image}" alt="${name}">`;
+    return `<img class="char-img" src="${escapeHtml(found.image)}" alt="${escapeHtml(name)}">`;
   } else {
     return `<span class="char-img" style="background:#eee;border:1px solid #ddd;"></span>`;
   }

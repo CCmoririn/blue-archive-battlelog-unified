@@ -55,3 +55,11 @@ venv/
 # ===============================
 test_*.py
 debug_*.py
+
+# 実行時の処理記録・ロック・キャッシュの退避
+.battlelog_runtime/
+*.json.bak
+*.json.*.tmp
+
+# 確認用コードはGitで管理する
+!tests/test_*.py

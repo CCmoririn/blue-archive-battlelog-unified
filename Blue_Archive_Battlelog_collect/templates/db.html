@@ -938,6 +938,9 @@ async function doSearchFromParams() {
   const data = await res.json();
   showSearchResults(data.results || []);
 }
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"}[c]));
+}
 function showSearchResults(results) {
   const section = document.getElementById("searchResultsSection");
   const container = document.getElementById("searchResults");
@@ -949,13 +952,13 @@ function showSearchResults(results) {
   }
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
   results.forEach(res => {
-    const winnerSideIcon = res.winner_icon ? `<img class="side-icon" src="${res.winner_icon}" alt="side">` : "";
-    const winnerWinloseIcon = res.winner_winlose_icon ? `<img class="winlose-icon" src="${res.winner_winlose_icon}" alt="勝敗">` : "";
-    const loserSideIcon  = res.loser_icon ? `<img class="side-icon" src="${res.loser_icon}" alt="side">` : "";
-    const loserWinloseIcon  = res.loser_winlose_icon ? `<img class="winlose-icon" src="${res.loser_winlose_icon}" alt="勝敗">` : "";
+    const winnerSideIcon = res.winner_icon ? `<img class="side-icon" src="${escapeHtml(res.winner_icon)}" alt="side">` : "";
+    const winnerWinloseIcon = res.winner_winlose_icon ? `<img class="winlose-icon" src="${escapeHtml(res.winner_winlose_icon)}" alt="勝敗">` : "";
+    const loserSideIcon  = res.loser_icon ? `<img class="side-icon" src="${escapeHtml(res.loser_icon)}" alt="side">` : "";
+    const loserWinloseIcon  = res.loser_winlose_icon ? `<img class="winlose-icon" src="${escapeHtml(res.loser_winlose_icon)}" alt="勝敗">` : "";
     const winnerChars = res.winner_characters?.map(name => charImageTag(name)).join('') || "";
     const loserChars  = res.loser_characters?.map(name => charImageTag(name)).join('') || "";
-    const dateTag = res.date ? `<div class="result-date">${res.date}</div>` : "";
+    const dateTag = res.date ? `<div class="result-date">${escapeHtml(res.date)}</div>` : "";
     if (isMobile) {
       container.innerHTML += `
         <div class="result-row">
@@ -1006,7 +1009,7 @@ function charImageTag(name) {
   let all = strikerList.concat(specialList);
   let found = all.find(c => c.name === name);
   if (found && found.image) {
-    return `<img class="char-img" src="${found.image}" alt="${name}">`;
+    return `<img class="char-img" src="${escapeHtml(found.image)}" alt="${escapeHtml(name)}">`;
   } else {
     return `<span class="char-img" style="background:#eee;border:1px solid #ddd;"></span>`;
   }

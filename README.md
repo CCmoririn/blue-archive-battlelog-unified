@@ -1,103 +1,45 @@
-# Blue Archive Battlelog Collect - README
+# BlueArchive 対抗戦DB
 
----
+ブルーアーカイブの戦術対抗戦について、結果画像からログを収集し、相手編成への勝利例を検索する非公式Webアプリです。
 
-## 🌟 プロジェクト概要
+画像をアップロードすると、OpenCVによる前処理とGoogle Cloud Visionによる文字認識を行います。利用者が結果を確認・修正して確定した後、Googleスプレッドシートへ書き込み、GASで変換します。検索にはシーズン別のJSONキャッシュを使います。
 
-このプロジェクトは、**ブルーアーカイブ 戦術対抗戦ログ収集アプリ**の全コード・ドキュメントを管理するものです。  
-画像アップロード～OCR～スプレッドシート連携～DB検索までを一元化。  
-一般公開モード・限定公開モードを**単一のプロジェクトで共存**させる設計です。
+## 構成
 
----
+| パス | 役割 |
+| --- | --- |
+| `Blue_Archive_Battlelog_collect_public/` | 一般公開版のFlaskアプリ、画面、静的ファイル |
+| `Blue_Archive_Battlelog_collect/` | 限定版。既定では起動対象外 |
+| `manage.py` | 一般版の起動と、必要な場合の限定版の接続 |
+| `battlelog_safety.py` | 入力確認、画像の保存、ロック、JSONの安全な書き込み |
+| `battlelog_storage.py` | 一般版・限定版のシートとキャッシュの操作 |
+| `battlelog_submission.py` | 確認トークンと登録処理の状態管理 |
+| `battlelog_web.py` | アップロード・登録確定の受付 |
+| `battlelog_gas.py` | GAS呼び出し。import時には実行しない |
+| `tools/maintenance.py` | キャッシュと処理記録の確認、明示的なキャッシュ更新 |
+| `tests/` | 外部通信を行わない回帰テスト |
+| `docs/maintenance.md` | 設定、検証、復旧の手順と未確認の前提 |
 
-## 📂 ディレクトリ構成（2025/06/23現在）
+以前のREADMEでは、一般版と限定版のフォルダ説明が逆になっていました。上の表が現行コードの対応です。
 
-Blue-Archive-Battlelog-collect-unified/
-├─ Blue_Archive_Battlelog_collect/ # 一般版アプリ本体
-│ ├─ app.py
-│ ├─ main.py
-│ ├─ spreadsheet_manager.py
-│ ├─ ocr_processing.py
-│ ├─ object_detection.py
-│ ├─ defense_suggester.py
-│ ├─ config.py
-│ ├─ call_gas.py
-│ ├─ ...
-│ ├─ templates/ # 一般版用Jinja2テンプレート(html)
-│ ├─ static/ # 静的ファイル（css, js, 画像）
-│
-├─ Blue_Archive_Battlelog_collect_public/ # 限定版アプリ本体
-│ ├─ app_limited.py
-│ ├─ main_limited.py
-│ ├─ spreadsheet_manager_limited.py
-│ ├─ ocr_processing_limited.py
-│ ├─ object_detection_limited.py
-│ ├─ defense_suggester_limited.py
-│ ├─ config_limited.py
-│ ├─ call_gas_limited.py
-│ ├─ ...
-│ ├─ templates/ # 限定版用テンプレート（limited/ サブフォルダで分岐）
-│ ├─ static/
-│
-├─ cache_general/ # 一般版キャッシュ
-├─ cache_limited/ # 限定版キャッシュ
-├─ uploads/ # 画像一時保存（root共有/旧仕様）
-├─ .env # 環境変数ファイル（git管理外・機密）
-├─ call_gas.py # GAS呼び出し（ルート直下/補助用）
-├─ call_gas_limited.py # GAS呼び出し（限定用/補助用）
-├─ manage.py # サーバ管理・一括起動スクリプト等
-├─ requirements.txt # Python依存パッケージ
-├─ credentials.json
-├─ .gitignore
-└─ README.md # （本ファイル・方針/構成ドキュメント）
+## 維持する検索・認識の仕様
 
----
+- 防衛側を指定すると、その防衛に攻撃側が勝ったログを返します。攻撃側を指定すると、その攻撃を防衛側が防いだログを返します。
+- STRIKERは指定した枠で照合し、SPECIALは順不同で照合します。空欄は条件にしません。
+- STRIKERの射程・遮蔽条件でも検索できます。
+- 一般版と限定版は、シート・GAS・キャッシュ・URLの対応を確認して扱います。フォルダ名や `source` ラベルだけでは公開範囲を判断しません。
+- OCRの複数回呼び出しは、調整を重ねた認識方法の一部です。回数だけを理由に統合・削除しません。2026年11月2日の改修でも、画像前処理・切り出し・OCR・解析の本体は変更していません。
+- 防衛メーカーは、射程・遮蔽の並びを集計して各枠の生徒を選びます。評価値を、完成した6人編成そのものの予測勝率とは扱いません。
 
-## 📝 **運用と開発の絶対ルール**
+## 起動・検証
 
-### 1. **一般/限定はサブディレクトリで厳密に分割**
-- `Blue_Archive_Battlelog_collect/`：一般公開用（誰でもアクセスOK、検索・アップロードなど基本機能のみ）
-- `Blue_Archive_Battlelog_collect_public/`：限定公開用（サークル・仲間向け、内部統計・高機能検索・内部データ）
+依存関係は `requirements.txt`、Pythonの指定は `runtime.txt` を参照してください。ルートからのWSGI起動先は `manage:application` です。Renderの既存設定が自動でこの起動先へ変わるわけではありません。
 
-### 2. **各バージョンに対応した個別ファイルを維持**
-- app.py、main.py、spreadsheet_manager.py など**一般/限定で必ずファイルを分ける**
-- GAS・設定・キャッシュも同様に `_limited` サフィックス付きで区別
+テストには本番の認証情報は不要です。
 
-### 3. **テンプレート/静的ファイルも同様に分岐**
-- `/templates` 配下で `limited/` サブディレクトリを用意し、限定版専用htmlを分離
-- CSS/JSも必要に応じて`limited_`接頭/接尾を付与して切り分け
+```text
+python -B -m unittest discover -s tests -v
+node tests/test_frontend.js
+```
 
-### 4. **プロジェクト全体に関わる共通ファイルは直下配置**
-- manage.py, requirements.txt, .env などは**root直下**  
-- これらは「どちらにも依存しない」or「環境全体に関わる」もの
-
----
-
-## 🚩 **設計ポリシー・開発方針**
-
-- **全ソース・設定は常に「どの機能が一般/限定どちら向けか」明確に分けて運用**
-- 変更時・新規追加時は、**必ず両バージョンで差異が反映されているか確認**
-- テンプレートやAPIの「限定用URL」「限定用キャッシュ」「限定GAS呼び出し」など、必ず専用のものを利用
-- **「README.md＝最高権威の運用ガイド」**として随時更新・記録（例：分岐理由、仕様差分、今後のTODOなども記載）
-
----
-
-## 📋 **サンプル：新機能追加時の手順**
-
-1. 仕様検討（一般/限定のどちら向け？両対応？を必ず明記）
-2. **両ディレクトリで必要なファイルを新規作成 or 片方に追記**
-3. テンプレートは一般→`/templates/`、限定→`/templates/limited/`で管理
-4. config、環境変数、キャッシュなども**一般/限定で別名を徹底**
-5. README.mdの「ディレクトリ構成」「運用ルール」「設計方針」を**最新に必ず追記**
-
----
-
-## 🏷️ **備考（運用Tips）**
-
-- 開発者が moririn（ご主人）である限り、**「自分の頭の整理・未来の自分/イルAIへの引き継ぎ」**が主目的
-- 万が一複数人開発になった場合も、README.mdとサブディレクトリを最優先で参照すること
-- **定期的にディレクトリ・ファイル構成の「実態」とこのREADMEがズレていないか確認すること**
-
----
-
-*最終更新: 2025/06/23（イル作成）*
+キャッシュや画像、処理記録、認証情報はGit管理外です。コードの履歴だけではデータを復元できません。本番へ反映する前に、[保守・検証・復旧の手順](docs/maintenance.md)に従い、Renderの保存先、実シート、GAS、バックアップを確認してください。

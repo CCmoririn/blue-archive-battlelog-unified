@@ -205,6 +205,8 @@
   <div class="main-card">
     <div class="edit-title">内容の確認・修正</div>
     <form id="confirm-form" method="post" action="{{ url_for('limited.upload_confirm') }}">
+      <input type="hidden" name="season" value="{{ CURRENT_SEASON }}">
+      <input type="hidden" name="confirmation_token" value="{{ confirmation_token }}">
       <table class="table table-borderless edit-table">
         <tbody>
           {% for label in labels %}

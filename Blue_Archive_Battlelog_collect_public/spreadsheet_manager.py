@@ -1,231 +1,46 @@
 import os
-import gspread
-from google.oauth2.service_account import Credentials
+import sys
 import threading
 import time
-import json
+from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import CURRENT_SEASON, SEASON_LIST, CACHE_DIR
+from battlelog_storage import SheetStore, google_credentials, google_client, records_from_values
+from battlelog_safety import validate_season
 
-# ========== Google認証を環境変数JSON優先で取得 ==========
+_store = SheetStore(CACHE_DIR, CURRENT_SEASON, SEASON_LIST,
+                    "BATTLELOG_SHEET_ID", "OUTPUT_SHEET_ID", client_factory=lambda: google_client())
 
 def get_google_credentials(scopes):
-    creds_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
-    if creds_json:
-        creds_dict = json.loads(creds_json)
-        return Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    creds_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-    if creds_path and os.path.exists(creds_path):
-        return Credentials.from_service_account_file(creds_path, scopes=scopes)
-    raise Exception("Google認証情報が見つかりません（環境変数もファイルもなし）")
-
-# ========== 画像アップロード時：変換前シートへ追加（ID/GOOD/BAD付き） ==========
+    return google_credentials(scopes)
 
 def update_spreadsheet(data, season=None):
-    import unicodedata  # 関数内importでもOK
-
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = get_google_credentials(SCOPES)
-    client = gspread.authorize(creds)
-    SPREADSHEET_ID = os.environ.get("BATTLELOG_SHEET_ID")
-    if not SPREADSHEET_ID:
-        raise Exception("BATTLELOG_SHEET_ID environment variable is not set.")
-    season_key = season or CURRENT_SEASON
-    sheet_name = f"変換前_{season_key}"
-    worksheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
-
-    # ヘッダー取得とIDカラム番号の自動検出
-    headers = worksheet.row_values(2)
-    print("ヘッダー:", headers)
-    try:
-        id_col = headers.index("ID") + 1  # 1始まり
-    except ValueError:
-        raise Exception("IDカラムが見つかりません。ヘッダー行を確認してください。")
-
-    id_list = worksheet.col_values(id_col)[2:]  # 3行目以降
-    print("ID列内容:", id_list)
-
-    id_nums = []
-    for val in id_list:
-        val = str(val).strip()
-        try:
-            num = int(unicodedata.normalize("NFKC", val))
-            if num > 0:
-                id_nums.append(num)
-        except Exception:
-            continue
-    max_id = max(id_nums) if id_nums else 0
-    new_id = str(max_id + 1)
-
-    new_row = data + ["", new_id, "0", "0"]
-    worksheet.insert_row(new_row, 3)
-    print(f"[{sheet_name}]シートに新規データ（ID付き）を追加しました:", new_row)
-
-# ===== シーズンごとのキャッシュ管理 =====
+    return _store.insert(data, season)
 
 def get_cache_filepath(season):
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    return os.path.join(CACHE_DIR, f"{season}.json")
+    return str(_store.path(season))
 
 def save_output_cache(season, data):
-    path = get_cache_filepath(season)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"キャッシュ保存完了: {path}（{len(data)}件）")
+    return _store.save(season, data)
 
 def load_output_cache(season):
-    path = get_cache_filepath(season)
-    if not os.path.exists(path):
-        print(f"キャッシュファイルなし: {path}")
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        try:
-            data = json.load(f)
-            return data
-        except Exception as e:
-            print(f"キャッシュ読込失敗: {e}")
-            return []
+    return _store.load(season)
 
 def refresh_output_sheet_cache(season=None):
-    """
-    「出力結果_シーズン名」と「一般版から転送」シートからデータを取得し
-    source="限定"/"一般"を付与、日付順でキャッシュ保存（ID/GOOD/BADはアップロード時に付与前提）。
-    """
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = get_google_credentials(SCOPES)
-    client = gspread.authorize(creds)
-
-    OUTPUT_SHEET_ID = os.environ.get("OUTPUT_SHEET_ID")
-    if not OUTPUT_SHEET_ID:
-        raise Exception("OUTPUT_SHEET_ID environment variable is not set.")
-    season_key = season or CURRENT_SEASON
-
-    GENERAL_TRANSFER_SHEET_ID = os.environ.get("GENERAL_TRANSFER_SHEET_ID") or OUTPUT_SHEET_ID
-
-    # 1. 限定データ
-    output_sheet_name = f"出力結果_{season_key}"
-    output_ws = client.open_by_key(OUTPUT_SHEET_ID).worksheet(output_sheet_name)
-    output_records = get_sheet_records_with_empty_safe(output_ws, head_row=2)
-    for row in output_records:
-        row["source"] = "限定"
-
-    # 2. 一般版から転送
-    try:
-        general_ws = client.open_by_key(GENERAL_TRANSFER_SHEET_ID).worksheet("一般版から転送")
-        general_records = get_sheet_records_with_empty_safe(general_ws, head_row=2)
-        for row in general_records:
-            row["source"] = "一般"
-    except Exception as e:
-        print(f"一般版から転送シートの取得失敗: {e}")
-        general_records = []
-
-    # 3. 日付順に結合（新しい順）
-    def parse_datetime(row):
-        import datetime
-        v = row.get("日付", "")
-        try:
-            return datetime.datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
-        except Exception:
-            return datetime.datetime.min
-
-    all_data = output_records + general_records
-    all_data.sort(key=parse_datetime, reverse=True)
-
-    save_output_cache(season_key, all_data)
-    return all_data
+    return _store.refresh(season)
 
 def get_output_sheet_cache(season=None):
-    season_key = season or CURRENT_SEASON
-    data = load_output_cache(season_key)
-    if not data:
-        print(f"{season_key}のキャッシュが無いので再生成します")
-        data = refresh_output_sheet_cache(season_key)
-    return data
+    return _store.get(season)
 
-def fetch_latest_output_row_as_dict(season=None):
-    """
-    「出力結果_シーズン名」シートの最新（3行目）を辞書化して返す
-    """
-    SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = get_google_credentials(SCOPES)
-    client = gspread.authorize(creds)
-    SPREADSHEET_ID = os.environ.get("OUTPUT_SHEET_ID")
-    if not SPREADSHEET_ID:
-        raise Exception("OUTPUT_SHEET_ID environment variable is not set.")
-    season_key = season or CURRENT_SEASON
-    sheet_name = f"出力結果_{season_key}"
-    worksheet = client.open_by_key(SPREADSHEET_ID).worksheet(sheet_name)
-    headers = worksheet.row_values(2)
-    latest_row = worksheet.row_values(3)
+def fetch_latest_output_row_as_dict(season=None, expected_id=None, expected_row=None):
+    return _store.fetch(season, expected_id=expected_id, expected_row=expected_row)
 
-    seen = {}
-    uniq_headers = []
-    for h in headers:
-        base = h.strip() if h.strip() else "空欄"
-        count = seen.get(base, 0)
-        if count > 0:
-            uniq_headers.append(f"{base}_{count+1}")
-        else:
-            uniq_headers.append(base)
-        seen[base] = count + 1
-
-    row_dict = {}
-    for idx, key in enumerate(uniq_headers):
-        row_dict[key] = latest_row[idx] if idx < len(latest_row) else ""
-    return row_dict
-
-def append_battlelog_row_from_api(row_dict, season=None, source="限定"):
-    """
-    アップロード直後に「3行目」だけキャッシュへ追加（即時反映用）
-    """
-    season_key = season or CURRENT_SEASON
-    data = get_output_sheet_cache(season_key)
-    row_dict["source"] = source
-    data.insert(0, row_dict)  # 先頭に追加（新しい順）
-    save_output_cache(season_key, data)
-    print(f"API経由で{source}データをキャッシュ[{season_key}]に追加: {row_dict}")
-
-# ========== 投票数カウント（GOOD/BAD）操作 ==========
+def append_battlelog_row_from_api(row_dict, season=None, source="限定", cache_only=False):
+    return _store.append(row_dict, season, source, cache_only=cache_only)
 
 def update_vote_count(row_id, vote_type, delta, season=None):
-    """
-    row_id（str/int）, vote_type ('GOOD' or 'BAD'), delta（+1/-1）, season
-    キャッシュ＆スプシ両方更新
-    """
-    season_key = season or CURRENT_SEASON
-    data = get_output_sheet_cache(season_key)
-    updated = False
-    for row in data:
-        if str(row.get("ID")) == str(row_id):
-            current = 0
-            try:
-                current = int(row.get(vote_type, "0"))
-            except Exception:
-                pass
-            row[vote_type] = str(max(0, current + delta))
-            updated = True
-            break
-    if updated:
-        save_output_cache(season_key, data)
-
-        # スプレッドシート側も更新
-        SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-        creds = get_google_credentials(SCOPES)
-        client = gspread.authorize(creds)
-        OUTPUT_SHEET_ID = os.environ.get("OUTPUT_SHEET_ID")
-        sheet_name = f"出力結果_{season_key}"
-        worksheet = client.open_by_key(OUTPUT_SHEET_ID).worksheet(sheet_name)
-        headers = worksheet.row_values(2)
-        id_col = headers.index("ID") + 1 if "ID" in headers else 20
-        vote_col = headers.index(vote_type) + 1 if vote_type in headers else (21 if vote_type == "GOOD" else 22)
-
-        # 行検索（ID一致のものだけ更新）
-        sheet_vals = worksheet.get_all_values()[2:]  # 3行目～
-        for idx, row_vals in enumerate(sheet_vals):
-            if str(row_vals[id_col-1]) == str(row_id):
-                worksheet.update_cell(idx+3, vote_col, row[vote_type])
-                break
-    return updated
+    return _store.vote(row_id, vote_type, delta, season)
 
 # ========== キャラデータ（STRIKER/SPECIAL）6時間キャッシュ ==========
 
@@ -245,8 +60,7 @@ def _update_striker_cache():
     try:
         print("STRIKERキャッシュを更新します...")
         SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-        creds = get_google_credentials(SCOPES)
-        client = gspread.authorize(creds)
+        client = google_client()
         SPREADSHEET_ID = os.environ.get("CHARDATA_SHEET_ID")
         if not SPREADSHEET_ID:
             raise Exception("CHARDATA_SHEET_ID environment variable is not set.")
@@ -288,8 +102,7 @@ def _update_special_cache():
     try:
         print("SPECIALキャッシュを更新します...")
         SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-        creds = get_google_credentials(SCOPES)
-        client = gspread.authorize(creds)
+        client = google_client()
         SPREADSHEET_ID = os.environ.get("CHARDATA_SHEET_ID")
         if not SPREADSHEET_ID:
             raise Exception("CHARDATA_SHEET_ID environment variable is not set.")
@@ -323,16 +136,7 @@ def get_special_list_from_sheet():
         _update_special_cache()
     return _special_cache["data"] or []
 
-_update_striker_cache()
-_update_special_cache()
 
-def char_cache_scheduler():
-    while True:
-        time.sleep(_CHAR_CACHE_LIFETIME)
-        _update_striker_cache()
-        _update_special_cache()
-
-threading.Thread(target=char_cache_scheduler, daemon=True).start()
 
 # ========== 新規追加: 射程・遮蔽でSTRIKER名リストを取得 ==========
 
@@ -351,12 +155,12 @@ def get_striker_names_by_condition(s_range=None, cover=None):
 _OTHER_ICON_SPREADSHEET_ID = os.environ.get("CHARDATA_SHEET_ID")
 _OTHER_ICON_SHEET = "その他アイコン"
 _other_icon_cache = {}
+_other_icon_timestamp = 0
 
 def load_other_icon_cache():
-    global _other_icon_cache
+    global _other_icon_cache, _other_icon_timestamp
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = get_google_credentials(SCOPES)
-    client = gspread.authorize(creds)
+    client = google_client()
     ws = client.open_by_key(_OTHER_ICON_SPREADSHEET_ID).worksheet(_OTHER_ICON_SHEET)
     records = ws.get_all_records()
     cache = {}
@@ -366,8 +170,15 @@ def load_other_icon_cache():
         if key and url:
             cache[key] = url
     _other_icon_cache = cache
+    _other_icon_timestamp = time.time()
 
 def get_other_icon(key):
+    if not _other_icon_cache or time.time() - _other_icon_timestamp > _CHAR_CACHE_LIFETIME:
+        try:
+            load_other_icon_cache()
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Icon master unavailable")
     return _other_icon_cache.get(key, "")
 
 def reload_other_icon_cache():
@@ -376,29 +187,7 @@ def reload_other_icon_cache():
 # ========== 空欄・重複ヘッダーでも安全な取得関数 ==========
 
 def get_sheet_records_with_empty_safe(worksheet, head_row=2):
-    rows = worksheet.get_all_values()
-    headers = rows[head_row - 1]
-    seen = {}
-    uniq_headers = []
-    for h in headers:
-        base = h.strip() if h.strip() else "空欄"
-        count = seen.get(base, 0)
-        if count > 0:
-            uniq_headers.append(f"{base}_{count+1}")
-        else:
-            uniq_headers.append(base)
-        seen[base] = count + 1
-
-    data = []
-    for row in rows[head_row:]:
-        record = {}
-        for idx, val in enumerate(row):
-            if idx < len(uniq_headers):
-                record[uniq_headers[idx]] = val
-        data.append(record)
-    return data
-
-# ========== 表記ゆれを吸収して一致判定 ==========
+    return records_from_values(worksheet.get_all_values(), head_row)
 
 def normalize(s):
     if s is None:
@@ -430,6 +219,11 @@ def search_battlelog_output_sheet(query, search_side, season=None, only_limited=
     ranges = ranges or [""]*4
     covers = covers or [""]*4
 
+    needs_master = any(ranges) or any(covers)
+    master_by_name = {}
+    if needs_master:
+        for char in get_striker_list_from_sheet():
+            master_by_name.setdefault(normalize(char["name"]), char)
     result = []
     for row in all_records_main:
         match = True
@@ -447,10 +241,7 @@ def search_battlelog_output_sheet(query, search_side, season=None, only_limited=
                 if qrange:
                     try:
                         qrange_int = int(qrange)
-                        char_info = next(
-                            (c for c in get_striker_list_from_sheet() if normalize(c["name"]) == target_name),
-                            None
-                        )
+                        char_info = master_by_name.get(target_name)
                         if not char_info or char_info.get("射程") != qrange_int:
                             match = False
                             break
@@ -459,10 +250,7 @@ def search_battlelog_output_sheet(query, search_side, season=None, only_limited=
                         break
                 if qcover:
                     qcover_bool = True if str(qcover).lower() in ("1", "true", "yes", "on") else False
-                    char_info = next(
-                        (c for c in get_striker_list_from_sheet() if normalize(c["name"]) == target_name),
-                        None
-                    )
+                    char_info = master_by_name.get(target_name)
                     if not char_info or char_info.get("遮蔽") != qcover_bool:
                         match = False
                         break

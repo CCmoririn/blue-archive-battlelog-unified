@@ -1,11 +1,13 @@
 import os
 from dotenv import load_dotenv
-load_dotenv()
+if os.environ.get("BATTLELOG_SKIP_DOTENV") != "1":
+    load_dotenv()
 
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import unicodedata
 import subprocess
-import requests
 from flask import (
     Flask, request, render_template, jsonify, redirect, url_for,
     send_from_directory, Response
@@ -24,9 +26,14 @@ from spreadsheet_manager import (
 from config import CURRENT_SEASON, SEASON_LIST
 from vote_api import vote_api
 
+from battlelog_safety import (configure_app, data_path, nonnegative_int,
+                              validate_attacks, validate_search, validate_season)
+from battlelog_web import upload_image, confirm_upload
+
 from defense_suggester import suggest_defense_teams, suggest_team_for_template
 
 app = Flask(__name__)
+configure_app(app)
 
 
 @app.before_request
@@ -41,7 +48,6 @@ app.register_blueprint(vote_api)
 if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
     print("GOOGLE_APPLICATION_CREDENTIALS not found in environment variables.")
 
-load_other_icon_cache()
 
 def normalize_sp_chars(chars: list, side: str) -> list:
     if not chars or len(chars) != 6:
@@ -63,87 +69,24 @@ def index():
         loser_teams=loser_teams
     )
 
+@app.route("/healthz", methods=["GET"])
+def health():
+    return jsonify(status="ok")
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    uploads_dir = os.path.abspath("uploads")
+    uploads_dir = str(data_path("uploads"))
     return send_from_directory(uploads_dir, filename)
 
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
-    if request.method == "GET":
-        return render_template("upload.html", SEASON_LIST=SEASON_LIST, CURRENT_SEASON=CURRENT_SEASON)
-    file = request.files.get("image_file")
-    if not file or file.filename == "":
-        return "画像ファイルが選択されていません。", 400
-    uploads_dir = os.path.abspath("uploads")
-    os.makedirs(uploads_dir, exist_ok=True)
-    file_path = os.path.join(uploads_dir, file.filename)
-    file.save(file_path)
-    try:
-        from main import process_image
-        season = request.form.get("season", CURRENT_SEASON)
-        row_data = process_image(file_path, season=season)
-        labels = [
-            "日付", "攻撃側プレイヤー", "攻撃結果",
-            "攻撃キャラ1", "攻撃キャラ2", "攻撃キャラ3",
-            "攻撃キャラ4", "攻撃キャラ5", "攻撃キャラ6",
-            "（空白）", "防衛側プレイヤー", "防衛結果",
-            "防衛キャラ1", "防衛キャラ2", "防衛キャラ3",
-            "防衛キャラ4", "防衛キャラ5", "防衛キャラ6"
-        ]
-        preview_image_url = f"/uploads/{file.filename}"
-        return render_template(
-            "confirm.html",
-            row_data=row_data,
-            labels=labels,
-            SEASON_LIST=SEASON_LIST,
-            CURRENT_SEASON=season,
-            preview_image_url=preview_image_url
-        )
-    except Exception as e:
-        print(f"render_template失敗: {e}")
-        return render_template(
-            "complete.html",
-            message=f"エラーが発生しました: {e}"
-        )
+    return upload_image(CURRENT_SEASON, SEASON_LIST, "general", "main", "uploaded_file")
 
 @app.route("/upload/confirm", methods=["POST"])
 def upload_confirm():
-    try:
-        from main import call_apps_script
-
-        row_data = [
-            request.form.get(f"field{i}", "")
-            for i in range(18)
-        ]
-        row_data = [unicodedata.normalize("NFKC", v) for v in row_data]
-        season = request.form.get("season", CURRENT_SEASON)
-        # 変換前への出力
-        update_spreadsheet(row_data, season=season)
-
-        # しらす式GAS実行（seasonを引数で渡す）
-        subprocess.run(
-            [sys.executable, "call_gas.py", season],
-            check=True
-        )
-
-        # ★GAS変換が終わった後に、最新行（3行目）のみキャッシュへ追加！
-        row_dict = fetch_latest_output_row_as_dict(season=season)
-        append_battlelog_row_from_api(row_dict, season=season, source="限定")
-
-        return redirect(url_for("upload_complete"))
-    except subprocess.CalledProcessError as e:
-        print(f"しらす式変換エラー: {e}")
-        return render_template(
-            "complete.html",
-            message=f"しらす式変換が失敗しました: {e}"
-        )
-    except Exception as e:
-        print(f"スプレッドシート更新エラー: {e}")
-        return render_template(
-            "complete.html",
-            message=f"スプレッドシートの更新に失敗しました: {e}"
-        )
+    return confirm_upload(CURRENT_SEASON, SEASON_LIST, "general",
+                          update_spreadsheet, fetch_latest_output_row_as_dict,
+                          append_battlelog_row_from_api, "upload_complete")
 
 @app.route("/upload/complete", methods=["GET"])
 def upload_complete():
@@ -176,28 +119,10 @@ def api_search():
     try:
         from datetime import datetime
 
-        data = request.json
-        if not data:
-            return jsonify({"error": "No data received"}), 400
-        side = data.get("side")
-        characters = data.get("characters")
-        ranges = data.get("ranges", ["", "", "", ""])
-        covers = data.get("covers", ["", "", "", ""])
+        data = request.get_json(silent=True)
+        season, characters, ranges, covers = validate_search(data, SEASON_LIST, CURRENT_SEASON)
+        side = data["side"]
         only_limited = data.get("only_limited", False)
-        season = data.get("season", CURRENT_SEASON)
-
-        if side not in ["attack", "defense"]:
-            return jsonify({"error": "Invalid parameters"}), 400
-
-        has_any = False
-        for i in range(4):
-            if (characters and len(characters) == 6 and characters[i]) or ranges[i] or covers[i]:
-                has_any = True
-        for i in range(4, 6):
-            if characters and len(characters) == 6 and characters[i]:
-                has_any = True
-        if not has_any:
-            return jsonify({"error": "検索条件を1つ以上選択してください。"}), 400
 
         matched_rows = search_battlelog_output_sheet(
             query=characters or [""]*6,
@@ -227,8 +152,8 @@ def api_search():
                 continue
 
             row_id = row.get("ID") or row.get("row_id") or ""
-            good_count = int(row.get("GOOD", 0))
-            bad_count = int(row.get("BAD", 0))
+            good_count = nonnegative_int(row.get("GOOD"))
+            bad_count = nonnegative_int(row.get("BAD"))
 
             if side == "attack":
                 if row.get("勝敗_2", "") != "Win":
@@ -298,18 +223,22 @@ def api_search():
                     "good_count": good_count,
                     "bad_count": bad_count,
                 })
-        print("API返却データ:", response)
         return jsonify({"results": response})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         print(f"/api/search エラー: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "処理に失敗しました。しばらくしてからお試しください。"}), 503
 
 # ▼▼▼ 防衛編成メーカー ▼▼▼
 @app.route("/defense_suggest", methods=["GET", "POST"])
 def defense_suggest():
     message = None
     result = None
-    season = request.form.get("season", CURRENT_SEASON)
+    try:
+        season = validate_season(request.form.get("season"), SEASON_LIST, CURRENT_SEASON)
+    except ValueError as error:
+        return str(error), 400
     striker_list = get_striker_list_from_sheet()
     special_list = get_special_list_from_sheet()
     attack_teams = [[None for _ in range(6)] for _ in range(5)]
@@ -338,7 +267,8 @@ def defense_suggest():
                 attacks = [["", "", "", "", "", ""]]
             result = suggest_defense_teams(attacks, season=season, strict_pos=strict_pos)
         except Exception as e:
-            message = f"提案ロジック実行時にエラーが発生しました: {e}"
+            app.logger.exception("Defense suggestion failed")
+            message = "提案を作成できませんでした。しばらくしてからお試しください。"
     else:
         attack_teams = [[None for _ in range(6)] for _ in range(5)]
     return render_template(
@@ -362,18 +292,30 @@ def notices():
 @app.route("/api/template_detail", methods=["POST"])
 def api_template_detail():
     try:
-        data = request.json
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("入力内容を確認してください。")
         template_tags = data.get("template_tags")
         attacks = data.get("attacks")
-        season = data.get("season", CURRENT_SEASON)
+        season = validate_season(data.get("season"), SEASON_LIST, CURRENT_SEASON)
         strict_pos = bool(data.get("strict_pos"))
-        if not attacks or not any(any(x) for x in attacks):
+        if attacks is None or attacks == []:
             attacks = [["", "", "", "", "", ""]]
+        validate_attacks(attacks)
+        if type(data.get("strict_pos", False)) is not bool:
+            raise ValueError("配置の指定が正しくありません。")
+        if (not isinstance(template_tags, list) or len(template_tags) != 4
+                or any(not isinstance(tag, list) or len(tag) != 2
+                       or type(tag[0]) is not int or tag[0] not in (350,450,550,650,750,850)
+                       or type(tag[1]) is not bool for tag in template_tags)):
+            raise ValueError("テンプレートの指定が正しくありません。")
         res = suggest_team_for_template(template_tags, attacks=attacks, season=season, strict_pos=strict_pos)
         return jsonify(res)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         print(f"/api/template_detail エラー: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "処理に失敗しました。しばらくしてからお試しください。"}), 503
 
 
 @app.route("/privacy.html")
@@ -403,7 +345,7 @@ def contact():
 
 @app.route('/ads.txt')
 def ads_txt():
-    return send_from_directory('.', 'ads.txt')
+    return send_from_directory(app.root_path, "ads.txt")
 
 @app.route("/sitemap.xml", methods=["GET"])
 def sitemap():

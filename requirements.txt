@@ -1,7 +1,7 @@
 setuptools
 wheel
 Flask==2.3.2
-werkzeug
+Werkzeug==2.3.8
 gspread==5.11.2
 oauth2client
 requests==2.31.0

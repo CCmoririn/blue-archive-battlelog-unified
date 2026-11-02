@@ -1,67 +1,42 @@
+import logging
 from flask import Blueprint, request, jsonify
 from spreadsheet_manager import update_vote_count, get_output_sheet_cache
+from config import CURRENT_SEASON, SEASON_LIST
+from battlelog_safety import nonnegative_int, validate_season
 
 vote_api = Blueprint("vote_api", __name__)
+log = logging.getLogger(__name__)
+
 
 @vote_api.route("/api/vote", methods=["POST"])
 def vote_endpoint():
-    """
-    グッド・バッド評価の加算・取り消し用APIエンドポイント
-
-    POST JSON:
-    {
-        "row_id": <int or str>,
-        "vote_type": "good" or "bad",
-        "action": "toggle",         # トグル型（押してなければ+1、押していれば-1）
-        "current_status": true/false, # 既に投票済みならtrue
-        "season": "s9"             # 任意：指定がなければCURRENT_SEASON
-    }
-
-    レスポンス：
-    {
-        "success": true,
-        "good_count": 5,
-        "bad_count": 1,
-        "message": "OK" or error
-    }
-    """
     try:
-        data = request.get_json(force=True)
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("評価の指定が正しくありません。")
         row_id = data.get("row_id")
-        vote_type = data.get("vote_type")  # "good" or "bad"
-        action = data.get("action", "toggle")
-        current_status = data.get("current_status", False)
-        season = data.get("season", None)
-
-        # 安全バリデーション
-        if not row_id or vote_type not in ("good", "bad"):
-            return jsonify({"success": False, "message": "row_idとvote_typeは必須"}), 400
-
-        vote_col = "GOOD" if vote_type == "good" else "BAD"
-        delta = -1 if current_status else 1  # 既に押していたら-1、押してなければ+1
-
-        # 投票カウント更新（キャッシュ＆シート）
-        updated = update_vote_count(row_id, vote_col, delta, season)
-
+        if type(row_id) not in (str, int) or not str(row_id).isascii() or not str(row_id).isdigit() or len(str(row_id)) > 20:
+            raise ValueError("評価するデータを確認してください。")
+        if data.get("vote_type") not in ("good", "bad") or type(data.get("current_status")) is not bool:
+            raise ValueError("評価の指定が正しくありません。")
+        # Missing season must never silently target the current season.
+        if not isinstance(data.get("season"), str) or not data["season"]:
+            raise ValueError("対象シーズンを指定してください。ページを再読み込みしてお試しください。")
+        season = validate_season(data["season"], SEASON_LIST, CURRENT_SEASON)
+        vote_col = "GOOD" if data["vote_type"] == "good" else "BAD"
+        updated = update_vote_count(str(row_id), vote_col, -1 if data["current_status"] else 1, season)
         if not updated:
-            return jsonify({"success": False, "message": "該当データが見つかりません"}), 404
+            return jsonify(success=False, message="評価するデータを一意に確認できませんでした。"), 404
+        entry = next(row for row in get_output_sheet_cache(season) if str(row.get("ID")) == str(row_id))
+        return jsonify(success=True, good_count=nonnegative_int(entry.get("GOOD")),
+                       bad_count=nonnegative_int(entry.get("BAD")), message="OK")
+    except ValueError as error:
+        return jsonify(success=False, message=str(error)), 400
+    except Exception:
+        log.exception("Vote update failed")
+        return jsonify(success=False, message="評価結果を確認できませんでした。ページを再読み込みしてください。"), 503
 
-        # 最新カウント取得（キャッシュから探す）
-        cache = get_output_sheet_cache(season)
-        entry = next((row for row in cache if str(row.get("ID")) == str(row_id)), None)
-        good_count = int(entry["GOOD"]) if entry and "GOOD" in entry else 0
-        bad_count = int(entry["BAD"]) if entry and "BAD" in entry else 0
 
-        return jsonify({
-            "success": True,
-            "good_count": good_count,
-            "bad_count": bad_count,
-            "message": "OK"
-        })
-    except Exception as e:
-        return jsonify({"success": False, "message": f"サーバーエラー: {e}"}), 500
-
-# ↓ ここから下は任意（ヘルスチェックや管理用など）
 @vote_api.route("/api/vote/health", methods=["GET"])
 def vote_health():
-    return jsonify({"status": "ok"})
+    return jsonify(status="ok")
