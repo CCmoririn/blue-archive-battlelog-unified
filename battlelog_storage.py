@@ -74,17 +74,19 @@ def parse_date(row):
 
 
 class SheetStore:
-    def __init__(self, cache_dir, current, seasons, input_env, output_env, client_factory=google_client):
+    def __init__(self, cache_dir, current, seasons, input_env, output_env, client_factory=google_client, settings_provider=None):
         self.cache_dir = cache_dir
         self.current = current
         self.seasons = seasons
         self.input_env = input_env
         self.output_env = output_env
         self.client_factory = client_factory
+        self.settings_provider = settings_provider
 
     def season(self, value=None):
         from battlelog_safety import validate_season
-        return validate_season(value, self.seasons, self.current)
+        current, seasons = self.settings_provider() if self.settings_provider else (self.current, self.seasons)
+        return validate_season(value, seasons, current)
 
     def path(self, season):
         return data_path(self.cache_dir) / (self.season(season) + ".json")

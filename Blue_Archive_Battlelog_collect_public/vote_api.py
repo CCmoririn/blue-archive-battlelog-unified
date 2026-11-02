@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request, jsonify
 from spreadsheet_manager import update_vote_count, get_output_sheet_cache
-from config import CURRENT_SEASON, SEASON_LIST
+from battlelog_admin_store import current_season, season_list
 from battlelog_safety import nonnegative_int, validate_season
 
 vote_api = Blueprint("vote_api", __name__)
@@ -22,7 +22,7 @@ def vote_endpoint():
         # Missing season must never silently target the current season.
         if not isinstance(data.get("season"), str) or not data["season"]:
             raise ValueError("対象シーズンを指定してください。ページを再読み込みしてお試しください。")
-        season = validate_season(data["season"], SEASON_LIST, CURRENT_SEASON)
+        season = validate_season(data["season"], season_list(), current_season())
         vote_col = "GOOD" if data["vote_type"] == "good" else "BAD"
         updated = update_vote_count(str(row_id), vote_col, -1 if data["current_status"] else 1, season)
         if not updated:

@@ -23,7 +23,7 @@ from spreadsheet_manager import (
     fetch_latest_output_row_as_dict,  # ★追加
     append_battlelog_row_from_api      # ★追加
 )
-from config import CURRENT_SEASON, SEASON_LIST
+from battlelog_admin_store import current_season, season_list
 from vote_api import vote_api
 
 from battlelog_safety import (configure_app, data_path, nonnegative_int,
@@ -34,6 +34,8 @@ from defense_suggester import suggest_defense_teams, suggest_team_for_template
 
 app = Flask(__name__)
 configure_app(app)
+from battlelog_admin import register_admin
+register_admin(app)
 
 
 @app.before_request
@@ -64,8 +66,8 @@ def index():
     loser_teams = get_latest_loser_teams(5)
     return render_template(
         "index.html",
-        SEASON_LIST=SEASON_LIST,
-        CURRENT_SEASON=CURRENT_SEASON,
+        SEASON_LIST=season_list(),
+        CURRENT_SEASON=current_season(),
         loser_teams=loser_teams
     )
 
@@ -80,11 +82,11 @@ def uploaded_file(filename):
 
 @app.route("/upload", methods=["GET", "POST"])
 def upload():
-    return upload_image(CURRENT_SEASON, SEASON_LIST, "general", "main", "uploaded_file")
+    return upload_image(current_season(), season_list(), "general", "main", "uploaded_file")
 
 @app.route("/upload/confirm", methods=["POST"])
 def upload_confirm():
-    return confirm_upload(CURRENT_SEASON, SEASON_LIST, "general",
+    return confirm_upload(current_season(), season_list(), "general",
                           update_spreadsheet, fetch_latest_output_row_as_dict,
                           append_battlelog_row_from_api, "upload_complete")
 
@@ -108,8 +110,8 @@ def search():
     return render_template("db.html",
         striker_list=striker_list,
         special_list=special_list,
-        SEASON_LIST=SEASON_LIST,
-        CURRENT_SEASON=CURRENT_SEASON,
+        SEASON_LIST=season_list(),
+        CURRENT_SEASON=current_season(),
         request=request,
         loser_teams=loser_teams
     )
@@ -120,7 +122,7 @@ def api_search():
         from datetime import datetime
 
         data = request.get_json(silent=True)
-        season, characters, ranges, covers = validate_search(data, SEASON_LIST, CURRENT_SEASON)
+        season, characters, ranges, covers = validate_search(data, season_list(), current_season())
         side = data["side"]
         only_limited = data.get("only_limited", False)
 
@@ -236,7 +238,7 @@ def defense_suggest():
     message = None
     result = None
     try:
-        season = validate_season(request.form.get("season"), SEASON_LIST, CURRENT_SEASON)
+        season = validate_season(request.form.get("season"), season_list(), current_season())
     except ValueError as error:
         return str(error), 400
     striker_list = get_striker_list_from_sheet()
@@ -275,7 +277,7 @@ def defense_suggest():
         "defense_suggest.html",
         striker_list=striker_list,
         special_list=special_list,
-        SEASON_LIST=SEASON_LIST,
+        SEASON_LIST=season_list(),
         CURRENT_SEASON=season,
         message=message,
         result=result,
@@ -297,7 +299,7 @@ def api_template_detail():
             raise ValueError("入力内容を確認してください。")
         template_tags = data.get("template_tags")
         attacks = data.get("attacks")
-        season = validate_season(data.get("season"), SEASON_LIST, CURRENT_SEASON)
+        season = validate_season(data.get("season"), season_list(), current_season())
         strict_pos = bool(data.get("strict_pos"))
         if attacks is None or attacks == []:
             attacks = [["", "", "", "", "", ""]]

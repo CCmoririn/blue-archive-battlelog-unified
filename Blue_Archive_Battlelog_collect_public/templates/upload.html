@@ -304,6 +304,8 @@
     <div class="main-card">
       <div class="upload-title">対抗戦ログアップロード</div>
       <form id="upload-form" method="post" enctype="multipart/form-data" action="/upload">
+        <input type="hidden" name="season" value="{{ CURRENT_SEASON }}">
+        <p class="text-center">投稿先：{{ CURRENT_SEASON }}</p>
         <div class="mb-3">
           <label for="imageInput" class="form-label">画像を選択</label>
           <input class="form-control" type="file" id="imageInput" name="image_file" accept="image/*" required>

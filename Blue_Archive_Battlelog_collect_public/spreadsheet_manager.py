@@ -8,9 +8,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import CURRENT_SEASON, SEASON_LIST, CACHE_DIR
 from battlelog_storage import SheetStore, google_credentials, google_client, records_from_values
 from battlelog_safety import validate_season
+from battlelog_admin_store import public_settings
 
 _store = SheetStore(CACHE_DIR, CURRENT_SEASON, SEASON_LIST,
-                    "BATTLELOG_SHEET_ID", "OUTPUT_SHEET_ID", client_factory=lambda: google_client())
+                    "BATTLELOG_SHEET_ID", "OUTPUT_SHEET_ID", client_factory=lambda: google_client(), settings_provider=public_settings)
 
 def get_google_credentials(scopes):
     return google_credentials(scopes)

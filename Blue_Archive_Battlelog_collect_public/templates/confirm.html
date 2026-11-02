@@ -219,6 +219,7 @@
 <body>
   <div class="main-card">
     <div class="edit-title">内容の確認・修正</div>
+    <p class="text-center">投稿先：{{ CURRENT_SEASON }}</p>
     <form id="confirm-form" method="post" action="/upload/confirm">
       <input type="hidden" name="season" value="{{ CURRENT_SEASON }}">
       <input type="hidden" name="confirmation_token" value="{{ confirmation_token }}">

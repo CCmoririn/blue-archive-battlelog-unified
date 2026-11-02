@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}対抗戦DB 管理画面{% endblock %}</title>
+<link rel="icon" href="/static/favicon.ico">
+<link rel="stylesheet" href="{{ url_for('battlelog_admin.static',filename='admin.css') }}">
+<script src="{{ url_for('battlelog_admin.static',filename='admin.js') }}" defer></script></head>
+<body><header class="topbar"><a class="brand" href="{{ url_for('battlelog_admin.home') }}">対抗戦DB <span>管理画面</span></a>
+{% if session.get('admin_auth') %}<div class="top-actions"><a href="/search" target="_blank" rel="noopener">公開サイト ↗</a><form method="post" action="{{ url_for('battlelog_admin.logout') }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="text-button">ログアウト</button></form></div>{% endif %}</header>
+{% if session.get('admin_auth') %}<nav aria-label="管理メニュー">{% for endpoint,label in [('home','ホーム'),('characters','キャラ管理'),('seasons','シーズン管理'),('status','状態確認'),('history','変更履歴')] %}<a class="{{ 'active' if request.endpoint == 'battlelog_admin.'+endpoint else '' }}" href="{{ url_for('battlelog_admin.'+endpoint) }}">{{ label }}</a>{% endfor %}</nav>{% endif %}
+<main>{% for category,message in get_flashed_messages(with_categories=true) %}<div class="notice {{ category }}" role="status">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
+<footer>対抗戦DB 管理者専用 · 日時は日本時間で表示しています</footer></body></html>
