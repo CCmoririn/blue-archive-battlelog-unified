@@ -21,7 +21,8 @@ def run_conversion(season, limited=False):
     response = requests.post(
         url,
         headers={"Authorization": f"Bearer {credentials.token}", "Content-Type": "application/json"},
-        json={"function": "main", "parameters": [{"parameter": {"season": season}}]},
+        json={"function": "main", "season": season,
+              "parameters": [{"parameter": {"season": season}}]},
         timeout=(10, 90),
     )
     response.raise_for_status()

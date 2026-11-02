@@ -472,7 +472,7 @@ class GasTests(IsolatedTest):
         response.json.return_value = {"success": True}
         with patch.dict(os.environ, {"credentials": "{}", "GAS_SCRIPT_URL": "https://example.invalid/gas"}), patch("google.oauth2.service_account.Credentials.from_service_account_info", return_value=credential), patch("requests.post", return_value=response) as post:
             run_conversion("s9")
-        self.assertEqual(post.call_args.kwargs["json"], {"function": "main", "parameters": [{"parameter": {"season": "s9"}}]})
+        self.assertEqual(post.call_args.kwargs["json"], {"function": "main", "season": "s9", "parameters": [{"parameter": {"season": "s9"}}]})
         self.assertEqual(post.call_args.kwargs["timeout"], (10, 90))
         response.raise_for_status.assert_called_once()
 
