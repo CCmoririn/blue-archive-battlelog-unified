@@ -6,7 +6,7 @@ import os
 import unicodedata
 from datetime import datetime
 
-from battlelog_safety import atomic_json, data_path, file_lock, nonnegative_int, read_json
+from battlelog_safety import OutputNotReady, atomic_json, data_path, file_lock, nonnegative_int, read_json
 
 log = logging.getLogger(__name__)
 
@@ -183,15 +183,17 @@ class SheetStore:
         rows = canonical_rows(records_from_values(worksheet.get_all_values()))
         if expected_id is not None:
             matches = [row for row in rows if str(row.get("ID", "")) == str(expected_id)]
+            if not matches:
+                raise OutputNotReady("登録したデータの反映を待っています。")
             if len(matches) != 1:
                 raise RuntimeError("登録したデータを一意に確認できませんでした。")
             return matches[0]
         if not rows:
-            raise RuntimeError("変換後のデータが見つかりません。")
+            raise OutputNotReady("変換後のデータが見つかりません。")
         if expected_row:
             expected = parse_date({"日付": expected_row[0]})
             if expected == datetime.min or parse_date(rows[0]) != expected:
-                raise RuntimeError("登録したデータと最新行が一致しません。")
+                raise OutputNotReady("登録したデータの反映を待っています。")
         return rows[0]
 
     def append(self, row, season=None, source="限定", cache_only=False):

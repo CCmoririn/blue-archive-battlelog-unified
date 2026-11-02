@@ -19,6 +19,10 @@ _locks_guard = threading.Lock()
 _depth = threading.local()
 
 
+class OutputNotReady(RuntimeError):
+    """The sheet has not exposed the submitted row yet; read-only retry is safe."""
+
+
 def data_root():
     return Path(os.environ.get("BATTLELOG_DATA_DIR", os.getcwd())).resolve()
 

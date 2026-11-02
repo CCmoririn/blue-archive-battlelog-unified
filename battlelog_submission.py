@@ -7,7 +7,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
-from battlelog_safety import data_path, file_lock
+from battlelog_safety import OutputNotReady, data_path, file_lock
 
 
 class SubmissionPending(RuntimeError):
@@ -88,6 +88,16 @@ def submit(token, kind, season, fields, insert, convert, fetch, append):
                 raise SubmissionPending("データの変換結果を確認できませんでした。再投稿せず、管理者にお問い合わせください。") from error
             mark(token, "converted")
         # Retrying this stage only reads Sheets and upserts the cache.
-        row = fetch(season=season, expected_id=row_id, expected_row=fields)
+        # IMPORTRANGE and GAS output can become visible after the HTTP response.
+        # Only repeat the read; never repeat the insert or conversion here.
+        for delay in (0, 1, 2, 4):
+            if delay:
+                time.sleep(delay)
+            try:
+                row = fetch(season=season, expected_id=row_id, expected_row=fields)
+                break
+            except OutputNotReady:
+                if delay == 4:
+                    raise
         append(row, season=season, source="限定")
         mark(token, "complete")

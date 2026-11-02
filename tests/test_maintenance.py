@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "Blue_Archive_Battlelog_collect_public"))
 os.environ["BATTLELOG_SKIP_DOTENV"] = "1"
 
-from battlelog_safety import atomic_json, file_lock, read_json, validate_search, validate_season
+from battlelog_safety import OutputNotReady, atomic_json, file_lock, read_json, validate_search, validate_season
 from battlelog_storage import SheetStore, records_from_values
 from battlelog_submission import SubmissionPending, issue_token, submit
 
@@ -291,6 +291,28 @@ class SubmissionTests(IsolatedTest):
         token = issue_token("limited", "s9")
         with self.assertRaises(ValueError):
             self.run_submit(token)
+
+    def test_delayed_output_retries_reads_without_repeating_writes(self):
+        token = issue_token("general", "s11")
+        fetch = Mock(side_effect=[OutputNotReady(), {"ID": "12"}])
+        with patch("battlelog_submission.time.sleep") as sleep:
+            callbacks = self.run_submit(token, fetch=fetch)
+        self.assertEqual(fetch.call_count, 2)
+        sleep.assert_called_once_with(1)
+        callbacks["insert"].assert_called_once()
+        callbacks["convert"].assert_called_once()
+        callbacks["append"].assert_called_once()
+
+    def test_output_retry_limit_keeps_the_resumable_state(self):
+        token = issue_token("general", "s11")
+        fetch = Mock(side_effect=OutputNotReady())
+        with patch("battlelog_submission.time.sleep"):
+            with self.assertRaises(OutputNotReady):
+                self.run_submit(token, fetch=fetch)
+        self.assertEqual(fetch.call_count, 4)
+        callbacks = self.run_submit(token)
+        callbacks["insert"].assert_not_called()
+        callbacks["convert"].assert_not_called()
 
 
 class WebTests(IsolatedTest):
