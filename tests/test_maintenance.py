@@ -314,6 +314,54 @@ class SubmissionTests(IsolatedTest):
         callbacks["insert"].assert_not_called()
         callbacks["convert"].assert_not_called()
 
+    def test_input_mirror_delay_can_resume_without_another_insert(self):
+        token = issue_token("general", "s11")
+        ready = Mock(side_effect=OutputNotReady())
+        with self.assertRaises(OutputNotReady):
+            self.run_submit(token, ready=ready)
+        callbacks = self.run_submit(token)
+        callbacks["insert"].assert_not_called()
+        callbacks["convert"].assert_called_once()
+
+
+class RemoteJournalTests(SubmissionTests):
+    def setUp(self):
+        super().setUp()
+        import battlelog_journal as journal
+        self.env_remote = patch.dict(os.environ, {"BATTLELOG_JOURNAL_SHEET_ID": "journal-test"})
+        self.env_remote.start()
+        self.addCleanup(self.env_remote.stop)
+        self.rows = [journal.HEADERS[:]]
+        sheet = Mock()
+        sheet.get_all_values.side_effect = lambda: [row[:] for row in self.rows]
+        sheet.append_row.side_effect = lambda values, **kwargs: self.rows.append(values[:])
+
+        def update(cell_range, values, **kwargs):
+            index = int(cell_range.split(":")[0][1:]) - 1
+            self.rows[index] = values[0][:]
+        sheet.update.side_effect = update
+        self.journal_patch = patch.object(journal, "worksheet", return_value=sheet)
+        self.journal_patch.start()
+        self.addCleanup(self.journal_patch.stop)
+
+    def test_restart_without_local_files_does_not_repeat_a_completed_write(self):
+        token = issue_token("general", "s11")
+        self.run_submit(token)
+        self.assertFalse((Path(self.temp.name) / ".battlelog_runtime/submissions.sqlite3").exists())
+        callbacks = self.run_submit(token)
+        for callback in callbacks.values():
+            callback.assert_not_called()
+        self.assertNotIn(token, json.dumps(self.rows))
+
+    def test_unavailable_journal_prevents_any_remote_insert(self):
+        import battlelog_journal as journal
+        token = issue_token("general", "s11")
+        insert = Mock()
+        with patch.object(journal, "update", side_effect=ConnectionError()):
+            with self.assertRaises(ConnectionError):
+                self.run_submit(token, insert=insert)
+        insert.assert_not_called()
+
 
 class WebTests(IsolatedTest):
     @classmethod
@@ -465,6 +513,29 @@ with patch('requests.sessions.Session.request',side_effect=AssertionError('netwo
 
 
 class GasTests(IsolatedTest):
+    def test_conversion_waits_for_the_exact_input_id(self):
+        from battlelog_gas import wait_for_input
+        sheet = Mock()
+        sheet.get.side_effect = [[["日付", "ID"], ["old", "11"]], [["日付", "ID"], ["new", "12"]]]
+        client = Mock()
+        client.open_by_key.return_value.worksheet.return_value = sheet
+        with patch("battlelog_storage.google_client", return_value=client), patch("battlelog_gas.time.sleep") as sleep:
+            wait_for_input("s9", "12")
+        client.open_by_key.return_value.worksheet.assert_called_once_with("変換前_s9")
+        self.assertEqual(sheet.get.call_count, 2)
+        sleep.assert_called_once_with(1)
+
+    def test_stale_input_mirror_never_proceeds_to_conversion(self):
+        from battlelog_gas import wait_for_input
+        sheet = Mock()
+        sheet.get.return_value = [["ID"], ["11"]]
+        client = Mock()
+        client.open_by_key.return_value.worksheet.return_value = sheet
+        with patch("battlelog_storage.google_client", return_value=client), patch("battlelog_gas.time.sleep"):
+            with self.assertRaises(OutputNotReady):
+                wait_for_input("s11", "12")
+        self.assertEqual(sheet.get.call_count, 7)
+
     def test_conversion_payload_and_timeouts(self):
         from battlelog_gas import run_conversion
         credential = Mock(token="fake-token")

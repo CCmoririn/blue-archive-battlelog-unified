@@ -2,6 +2,25 @@
 
 import json
 import os
+import time
+
+
+def wait_for_input(season, expected_id):
+    """The legacy GAS converts row 3: wait for IMPORTRANGE before invoking it."""
+    from battlelog_safety import OutputNotReady
+    from battlelog_storage import google_client
+    if expected_id is None:
+        raise RuntimeError("Conversion requires an input ID")
+    sheet = google_client().open_by_key(os.environ["OUTPUT_SHEET_ID"]).worksheet(f"変換前_{season}")
+    for delay in (0, 1, 2, 4, 8, 15, 15):
+        if delay:
+            time.sleep(delay)
+        rows = sheet.get("A2:Z3")
+        if len(rows) >= 2 and "ID" in rows[0]:
+            column = rows[0].index("ID")
+            if len(rows[1]) > column and str(rows[1][column]) == str(expected_id):
+                return
+    raise OutputNotReady("シート間のデータ反映を待っています。同じ確認画面からもう一度お試しください。")
 
 
 def run_conversion(season, limited=False):

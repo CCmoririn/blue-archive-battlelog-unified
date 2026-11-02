@@ -6,8 +6,8 @@ import unicodedata
 
 from flask import redirect, render_template, request, url_for
 
-from battlelog_gas import run_conversion
-from battlelog_safety import file_lock, save_upload, validate_season
+from battlelog_gas import run_conversion, wait_for_input
+from battlelog_safety import OutputNotReady, file_lock, save_upload, validate_season
 from battlelog_submission import SubmissionPending, issue_token, submit
 
 log = logging.getLogger(__name__)
@@ -49,12 +49,15 @@ def confirm_upload(current, seasons, kind, insert, fetch, append, complete_endpo
         fields = [unicodedata.normalize("NFKC", request.form.get(f"field{i}", "")) for i in range(18)]
         submit(request.form.get("confirmation_token"), kind, season, fields,
                insert=insert, fetch=fetch, append=append,
+               ready=(lambda season, row_id: wait_for_input(season, row_id)) if kind == "general" else None,
                convert=lambda season: run_conversion(season, limited=kind == "limited"))
         return redirect(url_for(complete_endpoint))
     except ValueError as error:
         return render_template("complete.html", message=str(error)), 400
     except SubmissionPending as error:
         log.exception("Submission needs reconciliation")
+        return render_template("complete.html", message=str(error)), 503
+    except OutputNotReady as error:
         return render_template("complete.html", message=str(error)), 503
     except Exception:
         log.exception("Submission cache reconciliation failed")

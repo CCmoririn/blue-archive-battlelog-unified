@@ -14,6 +14,7 @@
 | `battlelog_safety.py` | 入力確認、画像の保存、ロック、JSONの安全な書き込み |
 | `battlelog_storage.py` | 一般版・限定版のシートとキャッシュの操作 |
 | `battlelog_submission.py` | 確認トークンと登録処理の状態管理 |
+| `battlelog_journal.py` | 再起動後も残すGoogleシート上の処理記録 |
 | `battlelog_web.py` | アップロード・登録確定の受付 |
 | `battlelog_gas.py` | GAS呼び出し。import時には実行しない |
 | `tools/maintenance.py` | キャッシュと処理記録の確認、明示的なキャッシュ更新 |

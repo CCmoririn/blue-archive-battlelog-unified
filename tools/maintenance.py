@@ -28,6 +28,13 @@ def main():
         load_dotenv(ROOT / ".env")
     from battlelog_safety import data_path, file_lock
     if args.command == "submissions":
+        import battlelog_journal as journal
+        if journal.enabled():
+            values = journal.worksheet().get_all_values()
+            if not values or values[0] != journal.HEADERS:
+                raise RuntimeError("Submission journal headers do not match")
+            print(json.dumps([dict(zip(journal.HEADERS, row)) for row in values[-100:] if row != journal.HEADERS], indent=2))
+            return
         path = data_path(".battlelog_runtime/submissions.sqlite3")
         if not path.exists():
             print("No submission journal exists.")
