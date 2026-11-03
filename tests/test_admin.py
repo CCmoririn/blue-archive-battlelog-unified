@@ -395,9 +395,10 @@ class AdminTests(AdminFixture):
         self.assertNotIn(added["id"], [n["id"] for n in self.store.public_notices()])
 
     def test_hidden_notices_do_not_fall_back_to_old_published_html(self):
-        item = self.store.notices(force=True)[0]
-        self.store.save_notice(self.revision(), {**item, "base_revision":item["revision"], "published":"0"})
-        self.assertEqual(self.store.public_notices(), [])
+        with patch("battlelog_notices.time.monotonic", return_value=10):
+            item = self.store.notices(force=True)[0]
+            self.store.save_notice(self.revision(), {**item, "base_revision":item["revision"], "published":"0"})
+            self.assertEqual(self.store.public_notices(), [])
 
     def test_legacy_notice_import_retains_existing_paragraphs(self):
         from battlelog_notices import legacy_notices

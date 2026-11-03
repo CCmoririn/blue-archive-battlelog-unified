@@ -104,7 +104,7 @@ class NoticeManagement:
                 sheet.update(f"A{positions[0]}", [[after[k] for k in NOTICE_HEADERS]], value_input_option="RAW")
             else:
                 sheet.append_row([after[k] for k in NOTICE_HEADERS], value_input_option="RAW")
-            self._notice_at = 0
+            self._notice_at = float("-inf")
             self.commit(revision, "notice_saved", {"before": before, "after": after})
             return after
 
