@@ -58,6 +58,16 @@ def validate_settings(state):
         instant = datetime.fromisoformat(planned["at"])
         if instant.tzinfo is None or planned["season"] not in state.get("prepared", []) + keys:
             raise RuntimeError("Management schedule is invalid")
+    notice = state.get("season_notice")
+    if notice is not None:
+        if not isinstance(notice, dict) or not re.fullmatch(r"[0-9a-f]{32}", str(notice.get("id", ""))):
+            raise RuntimeError("Season announcement is invalid")
+        season_key(notice["season"])
+        if datetime.fromisoformat(notice["at"]).tzinfo is None or type(notice.get("published")) is not bool:
+            raise RuntimeError("Season announcement is invalid")
+        if "row" in notice and (type(notice["row"]) is not int or notice["row"] < 2 or
+                                (not notice["published"] and notice.get("entry", {}).get("id") != notice["id"])):
+            raise RuntimeError("Season announcement row is invalid")
     return state
 
 
@@ -105,7 +115,7 @@ class AdminStore(CharacterManagement, NoticeManagement):
 
     def public(self):
         try:
-            return self.read()["state"]
+            state = self.read()["state"]
         except Exception:
             log.exception("Using last known management settings")
             previous = self._last or read_json(data_path(".battlelog_runtime/admin-settings.json"))
@@ -113,7 +123,14 @@ class AdminStore(CharacterManagement, NoticeManagement):
                 raise RuntimeError("シーズン設定を取得できませんでした。しばらくしてからお試しください。")
             validate_settings(previous["state"])
             self._last, self._at = previous, time.monotonic() - 50
-            return copy.deepcopy(previous["state"])
+            state = copy.deepcopy(previous["state"])
+        if ((state.get("season_notice") and not state["season_notice"].get("published")) or
+                (state.get("season_notice") is None and state.get("schedule"))):
+            try:
+                self.publish_due_season_notice()
+            except Exception:
+                log.exception("Season announcement awaits retry")
+        return state
 
     def commit(self, expected, action, details, state=None):
         with file_lock("sheets"), self._guard:
@@ -125,7 +142,7 @@ class AdminStore(CharacterManagement, NoticeManagement):
             self.journal().append_row([revision, datetime.now(timezone.utc).isoformat(), action,
                                        json.dumps(details, ensure_ascii=False), json.dumps(snapshot, ensure_ascii=False)],
                                       value_input_option="RAW")
-            self._at = 0
+            self._at = float("-inf")
             return revision
 
     def master(self, kind):
@@ -215,6 +232,11 @@ class AdminStore(CharacterManagement, NoticeManagement):
             raise ValueError("現在より後の日時を指定してください。")
         with file_lock("sheets"):
             latest = self.read(force=True)
+            if latest["revision"] != expected:
+                raise Conflict("画面を読み込み直してから予約してください。")
+            self.publish_due_season_notice(now=now)
+            latest = self.read(force=True)
+            expected = latest["revision"]
             state = latest["state"]
             current, seasons = effective_settings(state, now)
             if key == current or key not in state["prepared"]:
@@ -223,6 +245,8 @@ class AdminStore(CharacterManagement, NoticeManagement):
             if problems:
                 raise ValueError("予約できません。" + " ".join(problems))
             state.update(current=current, seasons=seasons, schedule={"season": key, "at": at.astimezone(timezone.utc).isoformat()})
+            state["season_notice"] = {"id": uuid.uuid4().hex, "season": key,
+                                      "at": at.astimezone(timezone.utc).isoformat(), "published": False}
             return self.commit(expected, "schedule_saved", {"season": key, "at": at.isoformat()}, state)
 
     def cancel_schedule(self, expected):
@@ -234,12 +258,17 @@ class AdminStore(CharacterManagement, NoticeManagement):
             if datetime.now(timezone.utc) >= datetime.fromisoformat(state["schedule"]["at"]):
                 raise ValueError("この予約は適用済みです。現行シーズンの変更を使ってください。")
             state["schedule"] = None
+            state["season_notice"] = None
             return self.commit(expected, "schedule_canceled", {}, state)
 
     def set_current(self, expected, key):
         key = season_key(key)
         with file_lock("sheets"):
+            if self.read(force=True)["revision"] != expected:
+                raise Conflict("画面を読み込み直してから変更してください。")
+            self.publish_due_season_notice()
             latest = self.read(force=True)
+            expected = latest["revision"]
             state = latest["state"]
             _, seasons = effective_settings(state)
             if key not in {s["key"] for s in seasons}:
@@ -248,6 +277,9 @@ class AdminStore(CharacterManagement, NoticeManagement):
                 raise ValueError("対象シーズンのシート構成を確認してください。")
             before, _ = effective_settings(state)
             state.update(current=key, seasons=seasons, schedule=None)
+            state["season_notice"] = ({"id": uuid.uuid4().hex, "season": key,
+                                       "at": datetime.now(timezone.utc).isoformat(), "published": False}
+                                      if key != before else None)
             return self.commit(expected, "current_changed", {"before": before, "after": key}, state)
 
 

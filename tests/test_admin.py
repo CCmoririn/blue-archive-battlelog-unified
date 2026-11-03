@@ -8,6 +8,7 @@ import re
 import sys
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -409,6 +410,165 @@ class AdminTests(AdminFixture):
         self.assertTrue(all("<" not in item["text"] for item in items))
 
 
+class SeasonNoticeTests(AdminFixture):
+    cutoff = datetime(2029, 12, 31, 15, 30, tzinfo=timezone.utc)
+
+    def schedule(self, local_time="2030-01-01T00:30"):
+        self.store.prepare_season(self.revision(), "s12")
+        self.store.set_schedule(self.revision(), "s12", local_time,
+                                now=datetime(2029, 1, 1, tzinfo=timezone.utc))
+
+    def restart(self):
+        return AdminStore(self.store.client_factory)
+
+    def automatic_rows(self):
+        return [row for row in self.books["input"].worksheet(NOTICES_TAB).get_all_values()[1:] if row[0] != "legacy"]
+
+    def test_publish_once_at_cutoff_with_japan_date_and_after_restart(self):
+        self.schedule()
+        self.assertFalse(self.store.publish_due_season_notice(self.cutoff - timedelta(microseconds=1)))
+        self.assertEqual(self.automatic_rows(), [])
+        self.assertTrue(self.store.publish_due_season_notice(self.cutoff))
+        row = self.automatic_rows()[0]
+        self.assertEqual(row[1:4], ["2030-01-01", "シーズン12に更新しました。", "TRUE"])
+        self.assertFalse(self.store.publish_due_season_notice(self.cutoff + timedelta(days=1)))
+        self.assertFalse(self.restart().publish_due_season_notice(self.cutoff + timedelta(days=1)))
+        self.assertEqual(len(self.automatic_rows()), 1)
+
+    def test_cancel_and_reschedule_do_not_publish_the_old_reservation(self):
+        self.schedule()
+        original = self.store.read(force=True)["state"]["season_notice"]["id"]
+        self.store.set_schedule(self.revision(), "s12", "2030-01-02T00:30",
+                                now=datetime(2029, 1, 1, tzinfo=timezone.utc))
+        self.assertNotEqual(self.store.read(force=True)["state"]["season_notice"]["id"], original)
+        self.assertFalse(self.store.publish_due_season_notice(self.cutoff))
+        self.store.cancel_schedule(self.revision())
+        self.assertFalse(self.restart().publish_due_season_notice(self.cutoff + timedelta(days=2)))
+        self.assertEqual(self.automatic_rows(), [])
+
+    def test_concurrent_requests_do_not_publish_duplicates(self):
+        self.schedule()
+        with ThreadPoolExecutor(max_workers=4) as workers:
+            results = list(workers.map(lambda _: self.restart().publish_due_season_notice(self.cutoff), range(4)))
+        self.assertEqual(sum(results), 1)
+        self.assertEqual(len(self.automatic_rows()), 1)
+
+    def test_lost_sheet_response_reconciles_without_writing_a_second_row(self):
+        self.schedule()
+        sheet = self.books["input"].worksheet(NOTICES_TAB)
+        original = sheet.update
+
+        def lost_response(*args, **kwargs):
+            original(*args, **kwargs)
+            raise TimeoutError("response lost after write")
+
+        with patch.object(sheet, "update", side_effect=lost_response):
+            with self.assertRaises(TimeoutError):
+                self.store.publish_due_season_notice(self.cutoff)
+        with patch.object(sheet, "update", side_effect=AssertionError("must not write again")):
+            self.assertTrue(self.restart().publish_due_season_notice(self.cutoff))
+        self.assertEqual(len(self.automatic_rows()), 1)
+
+    def test_reserved_row_is_completed_before_a_manual_notice_is_added(self):
+        self.schedule()
+        sheet = self.books["input"].worksheet(NOTICES_TAB)
+        with patch.object(sheet, "update", side_effect=TimeoutError("before write")):
+            with self.assertRaises(TimeoutError):
+                self.store.publish_due_season_notice(self.cutoff)
+        restarted = self.restart()
+        # Reading the list recovers the reserved row even after a clock adjustment.
+        restarted.notices(force=True)
+        revision = restarted.read(force=True)["revision"]
+        restarted.save_notice(revision, {"date": "2030-01-01", "text": "手動のお知らせ", "published": "1"})
+        self.assertEqual([row[2] for row in self.automatic_rows()], ["シーズン12に更新しました。", "手動のお知らせ"])
+
+    def test_reserved_row_never_overwrites_an_external_notice(self):
+        self.schedule()
+        sheet = self.books["input"].worksheet(NOTICES_TAB)
+        with patch.object(sheet, "update", side_effect=TimeoutError("before write")):
+            with self.assertRaises(TimeoutError):
+                self.store.publish_due_season_notice(self.cutoff)
+        other = ["external", "2030-01-01", "別のお知らせ", True, 2, "external-revision", "2030-01-01T00:00:00+00:00"]
+        sheet.append_row(other)
+        with self.assertRaises(Conflict):
+            self.restart().publish_due_season_notice(self.cutoff)
+        self.assertEqual(sheet.values[-1], other)
+
+    def test_lost_completion_response_is_safe_after_restart(self):
+        self.schedule()
+        original = self.store.commit
+
+        def lost_response(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if args[1] == "season_notice_published":
+                raise TimeoutError("completion response lost")
+            return result
+
+        with patch.object(self.store, "commit", side_effect=lost_response):
+            with self.assertRaises(TimeoutError):
+                self.store.publish_due_season_notice(self.cutoff)
+        self.assertFalse(self.restart().publish_due_season_notice(self.cutoff))
+        self.assertEqual(len(self.automatic_rows()), 1)
+
+    def test_edited_or_hidden_announcement_is_not_republished(self):
+        self.schedule()
+        self.store.publish_due_season_notice(self.cutoff)
+        item = next(row for row in self.store.notices() if row["id"] != "legacy")
+        self.store.save_notice(self.revision(), {**item, "base_revision": item["revision"],
+                                               "text": "修正したお知らせ", "published": "0"})
+        self.assertFalse(self.restart().publish_due_season_notice(self.cutoff + timedelta(days=1)))
+        self.assertEqual(self.automatic_rows()[0][2:4], ["修正したお知らせ", "FALSE"])
+
+    def test_manual_change_announces_once_and_noop_does_not(self):
+        self.store.set_current(self.revision(), "s11")
+        self.assertFalse(self.store.publish_due_season_notice())
+        with patch.object(self.store, "check_season", return_value=[]):
+            self.store.set_current(self.revision(), "s10")
+        self.assertTrue(self.store.publish_due_season_notice())
+        self.assertFalse(self.restart().publish_due_season_notice())
+        self.assertEqual(self.automatic_rows()[0][2], "シーズン10に更新しました。")
+
+    def test_old_settings_are_not_announced_retroactively(self):
+        self.store.prepare_season(self.revision(), "s12")
+        state = self.store.read(force=True)["state"]
+        state["schedule"] = {"season": "s12", "at": "2000-01-01T00:00:00+00:00"}
+        self.store.commit(self.revision(), "schedule_saved", {}, state)
+        self.assertFalse(self.store.publish_due_season_notice())
+        self.assertEqual(self.automatic_rows(), [])
+
+    def test_existing_future_reservation_is_adopted_before_cutoff(self):
+        self.store.prepare_season(self.revision(), "s12")
+        state = self.store.read(force=True)["state"]
+        state["schedule"] = {"season": "s12", "at": self.cutoff.isoformat()}
+        self.store.commit(self.revision(), "schedule_saved", {}, state)
+        self.assertFalse(self.store.publish_due_season_notice(self.cutoff - timedelta(days=1)))
+        self.assertEqual(self.automatic_rows(), [])
+        self.assertTrue(self.restart().publish_due_season_notice(self.cutoff))
+        self.assertEqual(self.automatic_rows()[0][2], "シーズン12に更新しました。")
+
+    def test_announcement_failure_does_not_prevent_the_season_switch(self):
+        self.store.prepare_season(self.revision(), "s12")
+        now = datetime.now(timezone.utc)
+        at = now - timedelta(hours=1)
+        local_time = at.astimezone(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M")
+        self.store.set_schedule(self.revision(), "s12", local_time, now=now - timedelta(days=1))
+        sheet = self.books["input"].worksheet(NOTICES_TAB)
+        with patch.object(sheet, "update", side_effect=TimeoutError("before write")), \
+             self.assertLogs("battlelog_admin_store", level="ERROR"):
+            state = self.store.public()
+        self.assertEqual(effective_settings(state)[0], "s12")
+        self.assertTrue(self.restart().publish_due_season_notice())
+        self.assertEqual(len(self.automatic_rows()), 1)
+
+    def test_new_reservation_preserves_the_previous_due_announcement(self):
+        self.schedule()
+        self.store.prepare_season(self.revision(), "s13")
+        self.store.set_schedule(self.revision(), "s13", "2031-01-02T00:30",
+                                now=datetime(2031, 1, 1, tzinfo=timezone.utc))
+        self.assertEqual(self.automatic_rows()[0][2], "シーズン12に更新しました。")
+        self.assertEqual(self.store.read(force=True)["state"]["season_notice"]["season"], "s13")
+
+
 class AdminWebTests(AdminFixture):
     def setUp(self):
         super().setUp()
@@ -535,6 +695,23 @@ class AdminWebTests(AdminFixture):
         self.assertIn("告知（test）",body)
         self.assertIn("&lt;script&gt;",body)
         self.assertNotIn("<script>",body)
+
+    def test_season_switch_publishes_notice_on_public_access_and_shows_history(self):
+        self.login()
+        self.store.prepare_season(self.revision(), "s12")
+        now = datetime.now(timezone.utc)
+        at = now - timedelta(hours=1)
+        local_time = at.astimezone(timezone(timedelta(hours=9))).strftime("%Y-%m-%dT%H:%M")
+        self.store.set_schedule(self.revision(), "s12", local_time, now=now - timedelta(days=1))
+        response = self.get("/upload")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('value="s12"', response.get_data(as_text=True))
+        for _ in range(2):
+            body = self.get("/notices").get_data(as_text=True)
+            self.assertEqual(body.count("シーズン12に更新しました。"), 1)
+        history = self.get("/admin/history").get_data(as_text=True)
+        self.assertIn("シーズンのお知らせ公開", history)
+        self.assertIn("シーズンのお知らせ投稿開始", history)
 
 
 if __name__ == "__main__":

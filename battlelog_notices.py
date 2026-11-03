@@ -5,7 +5,7 @@ import os
 import re
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -50,6 +50,7 @@ class NoticeManagement:
         return self.sheet(os.environ.get("BATTLELOG_ADMIN_SHEET_ID"), NOTICES_TAB)
 
     def notices(self, force=False):
+        self.publish_due_season_notice()
         if not force and getattr(self, "_notice_cache", None) is not None and time.monotonic() - getattr(self, "_notice_at", 0) < 60:
             return copy.deepcopy(self._notice_cache)
         values = self.notices_sheet().get_all_values()
@@ -76,6 +77,61 @@ class NoticeManagement:
             if rows is None:
                 return None  # Existing HTML remains a fallback during setup/outages.
         return [row for row in rows if row["published"]]
+
+    def publish_due_season_notice(self, now=None):
+        """Reserve a durable row before writing so a retry cannot append twice."""
+        if not os.environ.get("BATTLELOG_ADMIN_SHEET_ID"):
+            return False
+        now = now or datetime.now(timezone.utc)
+        state = self.read()["state"]
+        pending = state.get("season_notice")
+        # Adopt a pre-existing future reservation, never an already-applied one.
+        planned = state.get("schedule")
+        if pending is None and planned and now < datetime.fromisoformat(planned["at"]):
+            with file_lock("sheets"):
+                latest = self.read(force=True)
+                state = latest["state"]
+                planned = state.get("schedule")
+                if state.get("season_notice") is None and planned and now < datetime.fromisoformat(planned["at"]):
+                    state["season_notice"] = {"id": uuid.uuid4().hex, "season": planned["season"],
+                                              "at": planned["at"], "published": False}
+                    self.commit(latest["revision"], "season_notice_armed", {"season": planned["season"]}, state)
+            return False
+        if not pending or pending.get("published") or ("row" not in pending and now < datetime.fromisoformat(pending["at"])):
+            return False
+        with file_lock("sheets"):
+            latest = self.read(force=True)
+            state = latest["state"]
+            pending = state.get("season_notice")
+            if not pending or pending.get("published") or ("row" not in pending and now < datetime.fromisoformat(pending["at"])):
+                return False
+            sheet = self.notices_sheet()
+            values = sheet.get_all_values()
+            if not values or values[0] != NOTICE_HEADERS:
+                raise RuntimeError("Notice management has not been initialized")
+            if "row" not in pending:
+                at = datetime.fromisoformat(pending["at"])
+                pending["row"] = len(values) + 1
+                pending["entry"] = {
+                    "id": pending["id"], "date": at.astimezone(timezone(timedelta(hours=9))).strftime("%Y-%m-%d"),
+                    "text": f"シーズン{int(pending['season'][1:])}に更新しました。", "published": True,
+                    "order": max([int(row[4]) for row in values[1:] if len(row) > 4 and row[4] != ""] or [0]) + 1,
+                    "revision": uuid.uuid4().hex, "updated": now.isoformat(),
+                }
+                latest["revision"] = self.commit(latest["revision"], "season_notice_pending",
+                                                  {"season": pending["season"], "notice_id": pending["id"]}, state)
+            position = pending["row"]
+            existing = values[position - 1] if position <= len(values) else []
+            if any(existing) and existing[0] != pending["id"]:
+                raise Conflict("自動投稿先のお知らせが変更されています。管理者にお問い合わせください。")
+            if not any(existing):
+                sheet.update(f"A{position}", [[pending["entry"][key] for key in NOTICE_HEADERS]], value_input_option="RAW")
+            self._notice_at = float("-inf")
+            pending["published"] = True
+            pending.pop("entry", None)
+            self.commit(latest["revision"], "season_notice_published",
+                        {"season": pending["season"], "notice_id": pending["id"]}, state)
+            return True
 
     def save_notice(self, expected, fields):
         try:

@@ -111,6 +111,7 @@ def logout():
 
 
 def context():
+    store.publish_due_season_notice()
     snapshot = store.read(force=True)
     current, published = effective_settings(snapshot["state"])
     planned = snapshot["state"].get("schedule")
