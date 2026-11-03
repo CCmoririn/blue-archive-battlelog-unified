@@ -450,6 +450,22 @@ class AdminWebTests(AdminFixture):
         with patch.dict(os.environ, BATTLELOG_ADMIN_PASSWORD_HASH="rotated"):
             self.assertEqual(self.get("/admin/characters").status_code, 302)
 
+    def test_login_remains_valid_for_14_days(self):
+        issued_at = 1800000000
+        with patch("itsdangerous.timed.TimestampSigner.get_timestamp", return_value=issued_at):
+            self.login()
+        cookie = self.client.get_cookie("battlelog_admin", path="/admin")
+        self.assertIsNotNone(cookie.expires)
+        for age, expected in ((13 * 24 * 60 * 60, 200), (14 * 24 * 60 * 60 + 1, 302)):
+            with self.subTest(age_seconds=age):
+                client = self.app.test_client()
+                client.set_cookie("battlelog_admin", cookie.value, path="/admin", secure=True)
+                with patch("itsdangerous.timed.TimestampSigner.get_timestamp", return_value=issued_at + age):
+                    response = client.get("/admin/", base_url="https://localhost")
+                self.assertEqual(response.status_code, expected)
+                if expected == 302:
+                    self.assertTrue(response.location.endswith("/admin/login"))
+
     def test_submission_timestamp_strings_are_displayed_in_japan_time(self):
         from battlelog_admin import admin_time
         self.assertEqual(admin_time("0"), "1970/01/01 09:00")

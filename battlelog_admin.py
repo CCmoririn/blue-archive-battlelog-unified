@@ -323,5 +323,5 @@ def register_admin(app):
     app.secret_key = os.environ.get("BATTLELOG_ADMIN_SESSION_KEY")
     app.config.update(SESSION_COOKIE_NAME="battlelog_admin", SESSION_COOKIE_PATH="/admin",
                       SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SECURE=True, SESSION_COOKIE_SAMESITE="Strict",
-                      PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
+                      PERMANENT_SESSION_LIFETIME=timedelta(days=14))
     app.register_blueprint(admin)
