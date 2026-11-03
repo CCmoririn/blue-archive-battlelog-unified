@@ -14,7 +14,7 @@ import types
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -363,6 +363,41 @@ class RemoteJournalTests(SubmissionTests):
         insert.assert_not_called()
 
 
+class OcrOutputTests(IsolatedTest):
+    def test_player_names_are_not_returned_or_logged_for_either_attack_side(self):
+        for folder, filename in (("Blue_Archive_Battlelog_collect_public", "main.py"),
+                                 ("Blue_Archive_Battlelog_collect", "main_limited.py")):
+            for left_sword in (True, False):
+                with self.subTest(processor=filename, left_sword=left_sword):
+                    cv2 = types.ModuleType("cv2")
+                    cv2.imwrite = Mock()
+                    cv2.rectangle = Mock()
+                    ocr = types.ModuleType("ocr_processing")
+                    header = "Lv.90 private-left\nWin\nLv.90 private-right\nLose\nVS"
+                    characters = [f"character-{i}" for i in range(12)]
+                    ocr.perform_google_vision_ocr = Mock(side_effect=[header] + characters)
+                    stubs = {"cv2": cv2, "numpy": types.ModuleType("numpy"), "ocr_processing": ocr}
+                    spec = importlib.util.spec_from_file_location("ocr_output_under_test", ROOT / folder / filename)
+                    processor = importlib.util.module_from_spec(spec)
+                    with patch.dict(sys.modules, stubs), \
+                         patch.object(sys, "path", sys.path + [str(ROOT / "Blue_Archive_Battlelog_collect")]):
+                        spec.loader.exec_module(processor)
+                        with patch.object(processor, "preprocess_image", return_value=MagicMock()), \
+                             patch.object(processor, "load_template"), \
+                             patch.object(processor, "match_icon", return_value=left_sword), \
+                             patch.object(processor.os, "remove"), patch("builtins.print") as output:
+                            row = processor.process_image("unused.png", season="s11")
+                    expected_results = ("Win", "Lose") if left_sword else ("Lose", "Win")
+                    self.assertEqual(len(row), 18)
+                    self.assertEqual((row[1], row[10]), ("", ""))
+                    self.assertEqual((row[2], row[11]), expected_results)
+                    self.assertEqual(row[3:9] + row[12:18], characters)
+                    self.assertEqual(row[9], "")
+                    self.assertEqual(ocr.perform_google_vision_ocr.call_count, 13)
+                    self.assertNotIn("private-left", str(output.call_args_list))
+                    self.assertNotIn("private-right", str(output.call_args_list))
+
+
 class WebTests(IsolatedTest):
     @classmethod
     def setUpClass(cls):
@@ -407,7 +442,10 @@ class WebTests(IsolatedTest):
 
     def test_safe_unique_upload_keeps_exact_image_bytes_and_confirmation_fields(self):
         fake = types.ModuleType("main")
-        fake.process_image = Mock(return_value=["2026-11-02 10:00:00"] + [""] * 17)
+        row = ["2026-11-02 10:00:00", "private-attacker", "Win"]
+        row += [f"attack-{i}" for i in range(6)] + ["", "private-defender", "Lose"]
+        row += [f"defense-{i}" for i in range(6)]
+        fake.process_image = Mock(return_value=row)
         with patch.dict(sys.modules, {"main": fake}):
             responses = [self.client.post("/upload", data={"image_file": (io.BytesIO(PNG), "../../main.py")}) for _ in range(2)]
         self.assertTrue(all(response.status_code == 200 for response in responses))
@@ -416,7 +454,31 @@ class WebTests(IsolatedTest):
         self.assertTrue(all(file.suffix == ".png" and file.read_bytes() == PNG for file in files))
         self.assertIn(b'name="confirmation_token"', responses[0].data)
         self.assertIn(b'name="season" value="s11"', responses[0].data)
+        for i, value in enumerate(row):
+            if i in (1, 10):
+                self.assertNotIn(f'name="field{i}"'.encode(), responses[0].data)
+                self.assertNotIn(value.encode(), responses[0].data)
+            else:
+                self.assertIn(f'name="field{i}" value="{value}"'.encode(), responses[0].data)
         self.assertEqual(fake.process_image.call_count, 2)
+
+    def test_confirmation_discards_player_names_without_shifting_other_fields(self):
+        for include_names in (False, True):
+            with self.subTest(old_form=include_names):
+                fields = [f"value-{i}" for i in range(18)]
+                fields[0], fields[2], fields[11] = "2026-11-03 10:00:00", "Win", "Lose"
+                token = issue_token("general", "s11")
+                form = {f"field{i}": value for i, value in enumerate(fields)
+                        if include_names or i not in (1, 10)}
+                form.update(season="s11", confirmation_token=token)
+                fields[1] = fields[10] = ""
+                with patch.object(self.module, "update_spreadsheet", return_value="12") as insert, \
+                     patch.object(self.module, "fetch_latest_output_row_as_dict", return_value={}), \
+                     patch.object(self.module, "append_battlelog_row_from_api"), \
+                     patch("battlelog_web.wait_for_input"), patch("battlelog_web.run_conversion"):
+                    response = self.client.post("/upload/confirm", data=form)
+                self.assertEqual(response.status_code, 302)
+                insert.assert_called_once_with(fields, season="s11")
 
     def test_size_limit_prevents_ocr(self):
         with patch.dict(self.module.app.config, {"MAX_CONTENT_LENGTH": 128}):

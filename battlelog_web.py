@@ -31,8 +31,8 @@ def upload_image(current, seasons, kind, processor_module, image_endpoint):
             processor = importlib.import_module(processor_module)
             row_data = processor.process_image(str(path), season=season)
         token = issue_token(kind, season)
-        labels = ["日付", "攻撃側プレイヤー", "攻撃結果"] + [f"攻撃キャラ{i}" for i in range(1, 7)]
-        labels += ["（空白）", "防衛側プレイヤー", "防衛結果"] + [f"防衛キャラ{i}" for i in range(1, 7)]
+        labels = ["日付", None, "攻撃結果"] + [f"攻撃キャラ{i}" for i in range(1, 7)]
+        labels += ["（空白）", None, "防衛結果"] + [f"防衛キャラ{i}" for i in range(1, 7)]
         return render_template("confirm.html", row_data=row_data, labels=labels,
                                SEASON_LIST=seasons, CURRENT_SEASON=season,
                                confirmation_token=token,
@@ -47,6 +47,8 @@ def confirm_upload(current, seasons, kind, insert, fetch, append, complete_endpo
     try:
         season = validate_season(request.form.get("season"), seasons, current)
         fields = [unicodedata.normalize("NFKC", request.form.get(f"field{i}", "")) for i in range(18)]
+        # Ignore player names even when an old confirmation form posts them.
+        fields[1] = fields[10] = ""
         submit(request.form.get("confirmation_token"), kind, season, fields,
                insert=insert, fetch=fetch, append=append,
                ready=(lambda season, row_id: wait_for_input(season, row_id)) if kind == "general" else None,

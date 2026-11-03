@@ -210,10 +210,12 @@
       <table class="table table-borderless edit-table">
         <tbody>
           {% for label in labels %}
+          {% if label is not none %}
           <tr>
             <th>{{ label }}</th>
             <td><input type="text" name="field{{ loop.index0 }}" value="{{ row_data[loop.index0] }}" class="form-control"></td>
           </tr>
+          {% endif %}
           {% endfor %}
         </tbody>
       </table>

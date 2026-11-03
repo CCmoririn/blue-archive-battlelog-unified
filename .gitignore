@@ -63,3 +63,6 @@ debug_*.py
 
 # 確認用コードはGitで管理する
 !tests/test_*.py
+
+# Fixed OCR comparison asset must be included in deployments.
+!assets/ocr/attack.png

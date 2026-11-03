@@ -2,8 +2,10 @@ import os
 import cv2
 import datetime
 import numpy as np
-import requests  # URLからの画像ダウンロード用
+import requests
 import subprocess
+from functools import lru_cache
+from pathlib import Path
 from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request
 from spreadsheet_manager import (
@@ -18,23 +20,11 @@ from config import CURRENT_SEASON  # ← 追加
 # 日本時間 (JST) 定義
 JST = datetime.timezone(datetime.timedelta(hours=9))
 
-def get_template_urls():
-    """
-    Google スプレッドシートID "12rEszTQ20FdLoxBewBtz0kF8-MUt0TnBYrIwMj1E7c4"
-    の「sonotaicon」シートからテンプレート画像のURLを取得するプレースホルダ関数。
-    """
-    attack_url = "https://drive.google.com/uc?export=download&id=1fvs35cCs0aKtxNZ1hX_myjiA_RrPufmB"
-    defense_url = "https://drive.google.com/uc?export=download&id=17AdY1q9ZynxTNlBVUvJTmZMd220uC_bs"
-    return attack_url, defense_url
-
-def load_template(url):
-    """
-    URLからテンプレート画像をダウンロードし、80×80にリサイズして返す。
-    デバッグ用に "debug_template_resized.jpg" に保存。
-    """
-    response = requests.get(url)
-    response.raise_for_status()
-    arr = np.asarray(bytearray(response.content), dtype=np.uint8)
+@lru_cache(maxsize=1)
+def load_template():
+    """Load the bundled attack icon once, preserving the existing decode and resize."""
+    path = Path(__file__).resolve().parents[1] / "assets" / "ocr" / "attack.png"
+    arr = np.asarray(bytearray(path.read_bytes()), dtype=np.uint8)
     template = cv2.imdecode(arr, cv2.IMREAD_COLOR)
     template = cv2.resize(template, (80, 80))
     cv2.imwrite("debug_template_resized.jpg", template)
@@ -165,16 +155,12 @@ def process_image(image_path, season=None):
     from ocr_processing import perform_google_vision_ocr
     full_text = perform_google_vision_ocr(tmp)
     os.remove(tmp)
-    print("OCR recognized text (header extraction):")
-    print(full_text)
-
     left_name, left_res, right_name, right_res, _, _ = parse_ocr_text(full_text)
 
     # アイコンROI
     roi = img[115:195, 35:115]
     cv2.imwrite("debug_icon_roi.jpg", roi)
-    attack_url, _ = get_template_urls()
-    template = load_template(attack_url)
+    template = load_template()
     left_sword = match_icon(roi, template, thresh=0.4)
     print("Left has sword:", left_sword)
 
@@ -198,7 +184,8 @@ def process_image(image_path, season=None):
 
     # 日付・結果行組立
     date_str = datetime.datetime.now(JST).strftime("%Y-%m-%d %H:%M:%S")
-    row = [date_str, atk_name, atk_res] + atk_chars + [""] + [def_name, def_res] + def_chars
+    # Keep player columns empty without changing the OCR or sheet layout.
+    row = [date_str, "", atk_res] + atk_chars + [""] + ["", def_res] + def_chars
     return row
 
 def call_apps_script():
