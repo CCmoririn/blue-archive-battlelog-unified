@@ -1,6 +1,20 @@
 "use strict";
+function fullwidthParens(field) {
+  const start = field.selectionStart, end = field.selectionEnd;
+  const fixed = field.value.replace(/\(/g, "（").replace(/\)/g, "）");
+  if (fixed !== field.value) {
+    field.value = fixed;
+    if (start !== null) field.setSelectionRange(start, end);
+  }
+}
+document.querySelectorAll("[data-fullwidth-parens]").forEach(field => {
+  field.addEventListener("input", event => { if (!event.isComposing) fullwidthParens(field); });
+  field.addEventListener("compositionend", () => fullwidthParens(field));
+  field.addEventListener("blur", () => fullwidthParens(field));
+});
 document.querySelectorAll("form").forEach(form => {
   form.addEventListener("submit", event => {
+    form.querySelectorAll("[data-fullwidth-parens]").forEach(fullwidthParens);
     if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
       event.preventDefault(); return;
     }
@@ -15,6 +29,17 @@ function filterCharacters() {
   document.querySelectorAll("#character-list tr").forEach(row => {
     row.hidden = !row.dataset.name.normalize("NFKC").toLowerCase().includes(word) || (filter.value && row.dataset.kind !== filter.value);
   });
+}
+const noticeDate = document.getElementById("notice-date");
+const noticeText = document.getElementById("notice-text");
+if (noticeDate && noticeText) {
+  const update = () => {
+    document.getElementById("notice-preview-date").textContent = noticeDate.value.replace(/-/g, "/");
+    document.getElementById("notice-preview-text").textContent = noticeText.value;
+  };
+  noticeDate.addEventListener("input", update);
+  noticeText.addEventListener("input", update);
+  update();
 }
 if (search && filter) { search.addEventListener("input",filterCharacters); filter.addEventListener("change",filterCharacters); }
 const kind = document.getElementById("character-kind");

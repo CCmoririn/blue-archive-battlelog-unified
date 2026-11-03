@@ -24,3 +24,4 @@ jobs:
       - run: python -m pip install Flask==2.3.2 Werkzeug==2.3.8 requests==2.31.0 gspread==5.11.2 python-dotenv==1.0.1 google-auth==2.23.3
       - run: python -B -m unittest discover -s tests -v
       - run: node tests/test_frontend.js
+      - run: node tests/test_admin_frontend.js

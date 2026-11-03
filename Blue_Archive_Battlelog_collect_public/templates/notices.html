@@ -1,3 +1,7 @@
+{% if notice_items is defined and notice_items is not none %}
+<div class="notice-box">{% for notice in notice_items %}<p class="managed-notice">{{ notice.date.replace('-', '/') }}　{{ notice.text }}</p>{% endfor %}</div>
+{% else %}
+<!-- legacy-notices-start -->
 <div class="notice-box">  
   <p>2026/10/07　「ツムギ」を追加しました！</p>
   <p>2026/10/07　「アンナ」、「エリナ」を追加しました！</p>
@@ -44,3 +48,5 @@
   <p>2025/05/28　ひらがな検索に対応しました！</p>
   <p>2025/05/27　サイトを公開しました！</p>
 </div>
+<!-- legacy-notices-end -->
+{% endif %}

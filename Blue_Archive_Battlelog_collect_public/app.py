@@ -24,6 +24,7 @@ from spreadsheet_manager import (
     append_battlelog_row_from_api      # ★追加
 )
 from battlelog_admin_store import current_season, season_list
+from battlelog_admin_store import store as management_store
 from vote_api import vote_api
 
 from battlelog_safety import (configure_app, data_path, nonnegative_int,
@@ -68,6 +69,7 @@ def index():
         "index.html",
         SEASON_LIST=season_list(),
         CURRENT_SEASON=current_season(),
+        notice_items=management_store.public_notices(),
         loser_teams=loser_teams
     )
 
@@ -288,7 +290,7 @@ def defense_suggest():
 # ▼▼ notices（お知らせ一覧ページ） ▼▼
 @app.route("/notices")
 def notices():
-    return render_template("notices.html")
+    return render_template("notices.html", notice_items=management_store.public_notices())
 
 # ▼▼▼ テンプレ決定過程テーブルAPI ▼▼▼
 @app.route("/api/template_detail", methods=["POST"])

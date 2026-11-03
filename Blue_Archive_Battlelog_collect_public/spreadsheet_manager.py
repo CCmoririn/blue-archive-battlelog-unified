@@ -9,6 +9,7 @@ from config import CURRENT_SEASON, SEASON_LIST, CACHE_DIR
 from battlelog_storage import SheetStore, google_credentials, google_client, records_from_values
 from battlelog_safety import validate_season
 from battlelog_admin_store import public_settings
+from battlelog_characters import gojuon_key
 
 _store = SheetStore(CACHE_DIR, CURRENT_SEASON, SEASON_LIST,
                     "BATTLELOG_SHEET_ID", "OUTPUT_SHEET_ID", client_factory=lambda: google_client(), settings_provider=public_settings)
@@ -89,7 +90,9 @@ def _update_striker_cache():
                     "image": icon_url,
                     "射程": s_range,
                     "遮蔽": shield,
+                    "reading": row.get("よみがな", ""),
                 })
+        char_list.sort(key=lambda item: gojuon_key(item["name"], item.get("reading", "")))
         _striker_cache = {
             "data": char_list,
             "timestamp": time.time()
@@ -114,7 +117,8 @@ def _update_special_cache():
             name = row.get("キャラ名")
             icon_url = row.get("アイコン")
             if name and icon_url:
-                char_list.append({"name": name, "image": icon_url})
+                char_list.append({"name": name, "image": icon_url, "reading": row.get("よみがな", "")})
+        char_list.sort(key=lambda item: gojuon_key(item["name"], item.get("reading", "")))
         _special_cache = {
             "data": char_list,
             "timestamp": time.time()

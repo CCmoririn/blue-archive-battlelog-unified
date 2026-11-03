@@ -4,4 +4,5 @@
 <div class="feature-grid"><a class="card feature" href="{{ url_for('battlelog_admin.characters') }}"><div class="feature-icon">＋</div><h2>キャラ管理</h2><p>キャラの追加・画像の変更・射程と遮蔽の編集。保存後はサイトへ即時反映できます。</p><span>キャラ一覧を開く →</span></a>
 <a class="card feature" href="{{ url_for('battlelog_admin.seasons') }}"><div class="feature-icon">◷</div><h2>シーズン管理</h2><p>次シーズンのシートを準備し、切り替え日時を予約します。</p><span>準備と予約へ →</span></a>
 <a class="card feature" href="{{ url_for('battlelog_admin.status') }}"><div class="feature-icon">✓</div><h2>状態確認</h2><p>キャラ情報の不足や、登録状況の確認が必要な投稿を確認します。</p><span>状態を見る →</span></a></div>
+<section class="card"><h2>お知らせ管理</h2><p>トップページのお知らせを追加・編集できます。下書き保存と公開／非公開の切り替えに対応しています。</p><a href="{{ url_for('battlelog_admin.notices') }}">お知らせを編集する →</a></section>
 <section class="card note"><h2>変更履歴を残します</h2><p>キャラの編集前の情報と設定変更を保存します。キャラ情報は履歴から編集前の状態へ戻せます。</p><a href="{{ url_for('battlelog_admin.history') }}">最近の変更を見る →</a></section>{% endblock %}

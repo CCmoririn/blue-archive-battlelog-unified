@@ -1,6 +1,5 @@
 """Private, append-only management settings and recoverable master updates."""
 import copy
-import hashlib
 import json
 import logging
 import os
@@ -9,7 +8,6 @@ import threading
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlsplit
 
 from battlelog_safety import atomic_json, data_path, file_lock, read_json
 from battlelog_storage import google_client
@@ -20,13 +18,8 @@ JST = timezone(timedelta(hours=9))
 log = logging.getLogger(__name__)
 
 
-class Conflict(ValueError):
-    pass
-
-
-def character_hash(item):
-    fields = {key: item.get(key) for key in ("kind", "name", "image", "range", "cover")}
-    return hashlib.sha256(json.dumps(fields, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+from battlelog_characters import CharacterManagement, Conflict, character_hash
+from battlelog_notices import NoticeManagement
 
 
 def season_key(value):
@@ -68,7 +61,7 @@ def validate_settings(state):
     return state
 
 
-class AdminStore:
+class AdminStore(CharacterManagement, NoticeManagement):
     def __init__(self, client_factory=google_client):
         self.client_factory = client_factory
         self._books = {}
@@ -139,69 +132,6 @@ class AdminStore:
         if kind not in ("STRIKER", "SPECIAL"):
             raise ValueError("STRIKERかSPECIALを選択してください。")
         return self.sheet(os.environ.get("CHARDATA_SHEET_ID"), kind)
-
-    def characters(self):
-        result = []
-        for kind in ("STRIKER", "SPECIAL"):
-            rows = self.master(kind).get_all_values()
-            if not rows or "キャラ名" not in rows[0] or "アイコン" not in rows[0]:
-                raise RuntimeError("Character master headers do not match")
-            for number, row in enumerate(rows[1:], 2):
-                item = dict(zip(rows[0], row + [""] * len(rows[0])))
-                if item.get("キャラ名"):
-                    result.append({"kind": kind, "row": number, "name": item["キャラ名"],
-                                   "image": item.get("アイコン", ""), "range": item.get("射程", ""),
-                                   "cover": str(item.get("遮蔽", "")).upper() == "TRUE"})
-        return result
-
-    def save_character(self, expected, fields):
-        kind = fields.get("kind")
-        sheet = self.master(kind)
-        name = (fields.get("name") or "").strip()
-        image = (fields.get("image") or "").strip()
-        original = (fields.get("original") or "").strip()
-        url = urlsplit(image)
-        if not name or len(name) > 120 or any(c in name for c in "\r\n\t"):
-            raise ValueError("キャラ名を120文字以内で入力してください。")
-        if len(image) > 2000 or url.scheme != "https" or not url.hostname or url.username or url.password:
-            raise ValueError("アイコンには https:// で始まる画像URLを入力してください。")
-        if original and original != name:
-            raise ValueError("登録済みの名前は戦績との照合に使うため変更できません。")
-        if kind == "STRIKER" and str(fields.get("range")) not in ("350", "450", "550", "650", "750", "850"):
-            raise ValueError("射程を選択してください。")
-        with file_lock("sheets"):
-            all_chars = self.characters()
-            matches = [c for c in all_chars if c["name"] == name]
-            if (not original and matches) or (original and (len(matches) != 1 or matches[0]["kind"] != kind)):
-                raise ValueError("同じ名前の登録状況を確認してください。種類は追加後に変更できません。")
-            before = matches[0] if original else None
-            if before and fields.get("base_hash") != character_hash(before):
-                raise Conflict("このキャラの情報が更新されています。画面を読み込み直して確認してください。")
-            after = {"name": name, "kind": kind, "image": image,
-                     "range": str(fields.get("range", "")) if kind == "STRIKER" else "",
-                     "cover": fields.get("cover") == "1" if kind == "STRIKER" else False}
-            operation = uuid.uuid4().hex
-            revision = self.commit(expected, "character_pending", {"operation": operation, "before": before, "after": after})
-            rows = sheet.get_all_values()
-            headers = rows[0]
-            row_number = before["row"] if before else len(rows) + 1
-            row = (rows[row_number - 1] + [""] * len(headers))[:len(headers)] if before else [""] * len(headers)
-            updates = {"キャラ名": name, "アイコン": image}
-            if kind == "STRIKER":
-                updates.update({"射程": after["range"], "遮蔽": "TRUE" if after["cover"] else "FALSE"})
-            for key, value in updates.items():
-                if key not in headers:
-                    raise RuntimeError("Character master column is missing")
-                row[headers.index(key)] = value
-            if before:
-                sheet.update(f"A{row_number}", [row], value_input_option="RAW")
-            else:
-                sheet.append_row(row, value_input_option="RAW")
-            dictionary = self.sheet(os.environ.get("OUTPUT_SHEET_ID"), "辞書")
-            if name not in dictionary.col_values(1):
-                dictionary.append_row([name], value_input_option="RAW")
-            self.commit(revision, "character_saved", {"operation": operation, "before": before, "after": after})
-            return after
 
     def prepare_season(self, expected, key):
         key = season_key(key)

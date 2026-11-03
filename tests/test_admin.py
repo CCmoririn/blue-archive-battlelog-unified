@@ -1,6 +1,7 @@
 """Offline management regressions: authentication, reservations and recoverable writes."""
 import copy
 import io
+import itertools
 import json
 import os
 import re
@@ -20,17 +21,32 @@ from werkzeug.security import generate_password_hash
 from gspread.exceptions import WorksheetNotFound
 
 from battlelog_admin_store import AdminStore, Conflict, HEADERS, TAB, character_hash, effective_settings, initial_settings
+from battlelog_notices import NOTICES_TAB, NOTICE_HEADERS
+
+_SHEET_IDS = itertools.count(1)
 
 
 class Sheet:
     def __init__(self, title, values=None, books=None):
         self.title, self.values, self.books = title, copy.deepcopy(values or []), books
+        self.id, self.col_count = next(_SHEET_IDS), 26
+        self.formats = [[{} for value in row] for row in self.values]
 
-    def get_all_values(self):
-        return copy.deepcopy(self.values)
+    def get_all_values(self, **kwargs):
+        rows = []
+        for raw in self.values:
+            row = [("TRUE" if v else "FALSE") if isinstance(v, bool) else str(v) if isinstance(v, (int, float)) else v for v in raw]
+            while row and row[-1] == "":
+                row.pop()
+            rows.append(row)
+        while rows and not rows[-1]:
+            rows.pop()
+        width = max(map(len, rows), default=0)
+        return [row + [""] * (width - len(row)) for row in rows]
 
     def append_row(self, row, **kwargs):
         self.values.append(list(row))
+        self.formats.append([{} for value in row])
 
     def get(self, cell_range):
         if self.values and self.values[0] and str(self.values[0][0]).startswith("=IMPORTRANGE"):
@@ -58,13 +74,104 @@ class Book:
     def worksheet(self, title):
         if title not in self.sheets:
             raise WorksheetNotFound(title)
+        self.sheets[title].spreadsheet = self
         return self.sheets[title]
 
     def add_worksheet(self, title, **kwargs):
         if title in self.sheets:
             raise AssertionError("Duplicate sheet creation")
         self.sheets[title] = Sheet(title, books=self.books)
-        return self.sheets[title]
+        return self.worksheet(title)
+
+    def fetch_sheet_metadata(self, params):
+        title, cell_range = params["ranges"].split("!")
+        sheet = self.worksheet(title.strip("'"))
+        row = int(re.search(r"\d+", cell_range)[0]) - 1
+        from battlelog_characters import entered
+        cells = []
+        for col, value in enumerate(sheet.values[row]):
+            extra = sheet.formats[row][col] if row < len(sheet.formats) and col < len(sheet.formats[row]) else {}
+            cells.append({**copy.deepcopy(extra), "userEnteredValue": {"formulaValue": value} if isinstance(value, str) and value.startswith("=") else entered(value)})
+        return {"sheets": [{"data": [{"rowData": [{"values": cells}]}]}]}
+
+    def batch_update(self, body):
+        def target(sid):
+            return next(sheet for sheet in self.sheets.values() if sheet.id == sid)
+        def ensure(sheet, row, col):
+            while len(sheet.values) <= row:
+                sheet.values.append([])
+            while len(sheet.formats) <= row:
+                sheet.formats.append([])
+            while len(sheet.values[row]) <= col:
+                sheet.values[row].append("")
+            while len(sheet.formats[row]) <= col:
+                sheet.formats[row].append({})
+        for request in body["requests"]:
+            kind, data = next(iter(request.items()))
+            if kind == "updateCells":
+                start = data["start"]
+                sheet = target(start["sheetId"])
+                for i, row in enumerate(data["rows"]):
+                    for j, cell in enumerate(row["values"]):
+                        r, c = start["rowIndex"] + i, start["columnIndex"] + j
+                        ensure(sheet, r, c)
+                        value = cell.get("userEnteredValue", {})
+                        sheet.values[r][c] = next(iter(value.values()), "")
+                        if data["fields"] != "userEnteredValue":
+                            sheet.formats[r][c] = {k:v for k,v in cell.items() if k != "userEnteredValue"}
+            elif kind == "sortRange":
+                area = data["range"]
+                sheet = target(area["sheetId"])
+                column = data["sortSpecs"][0]["dimensionIndex"]
+                begin, end = area["startRowIndex"], area["endRowIndex"]
+                rows = sorted(zip(sheet.values[begin:end], sheet.formats[begin:end]), key=lambda pair: pair[0][column])
+                sheet.values[begin:end] = [row[0] for row in rows]
+                sheet.formats[begin:end] = [row[1] for row in rows]
+            elif kind == "repeatCell":
+                area = data["range"]
+                sheet = target(area["sheetId"])
+                for row in range(area["startRowIndex"], area["endRowIndex"]):
+                    for col in range(area["startColumnIndex"], area["endColumnIndex"]):
+                        sheet.values[row][col] = ""
+            elif kind in ("insertDimension", "deleteDimension"):
+                area = data["range"]
+                sheet = target(area["sheetId"])
+                start = area["startIndex"]
+                if kind == "insertDimension":
+                    sheet.values.insert(start, [])
+                    sheet.formats.insert(start, [])
+                else:
+                    del sheet.values[start:area["endIndex"]]
+                    del sheet.formats[start:area["endIndex"]]
+            elif kind == "copyPaste":
+                source, dest = data["source"], data["destination"]
+                sheet = target(dest["sheetId"])
+                key = "userEnteredFormat" if data["pasteType"] == "PASTE_FORMAT" else "dataValidation"
+                for row in range(dest["startRowIndex"], dest["endRowIndex"]):
+                    for col in range(dest["startColumnIndex"], dest["endColumnIndex"]):
+                        ensure(sheet, row, col)
+                        src = source["startRowIndex"]
+                        extra = sheet.formats[src][col] if col < len(sheet.formats[src]) else {}
+                        if key in extra:
+                            sheet.formats[row][col][key] = copy.deepcopy(extra[key])
+            elif kind == "setDataValidation":
+                area = data["range"]
+                sheet = target(area["sheetId"])
+                for row in range(area["startRowIndex"], area["endRowIndex"]):
+                    for col in range(area["startColumnIndex"], area["endColumnIndex"]):
+                        ensure(sheet, row, col)
+                        sheet.formats[row][col]["dataValidation"] = copy.deepcopy(data["rule"])
+            elif kind == "deleteRange":
+                area = data["range"]
+                sheet = target(area["sheetId"])
+                column = area["startColumnIndex"]
+                for row in range(area["startRowIndex"], len(sheet.values) - 1):
+                    sheet.values[row][column] = sheet.values[row + 1][column]
+                sheet.values[-1][column] = ""
+            elif kind == "appendDimension":
+                target(data["sheetId"]).col_count += data["length"]
+            else:
+                raise AssertionError("Unexpected native Sheets operation: " + kind)
 
 
 def fixture_store():
@@ -79,6 +186,7 @@ def fixture_store():
                                                                  ["ユウカ", "650", "TRUE", "爆発", "https://example.com/a.png"]])
     books["master"].sheets["SPECIAL"] = Sheet("SPECIAL", [["キャラ名", "アイコン"], ["ヒビキ", "https://example.com/b.png"]])
     books["output"].sheets["辞書"] = Sheet("辞書", [["ユウカ"], ["ヒビキ"]])
+    books["input"].sheets[NOTICES_TAB] = Sheet(NOTICES_TAB, [NOTICE_HEADERS, ["legacy", "2026-10-07", "以前のお知らせ", "TRUE", 1, "legacy-revision", "2026-10-07T00:00:00+00:00"]])
     client = Mock()
     client.open_by_key.side_effect = lambda key: books[key]
     return AdminStore(lambda: client), books
@@ -109,9 +217,9 @@ class AdminTests(AdminFixture):
         fields = dict(before, original=before["name"], image="https://example.com/new.png", range="750", cover="0", base_hash=character_hash(before))
         self.store.save_character(self.revision(), fields)
         row = self.books["master"].worksheet("STRIKER").values[1]
-        self.assertEqual(row, ["ユウカ", "750", "FALSE", "爆発", "https://example.com/new.png"])
+        self.assertEqual(row[:5], ["ユウカ", "750", False, "爆発", "https://example.com/new.png"])
         event = self.store.read(force=True)["events"][-1]
-        self.assertEqual(event["details"]["before"], before)
+        self.assertTrue(all(event["details"]["before"][key] == value for key,value in before.items()))
         fields = dict(before, original=before["name"], cover="1", base_hash=character_hash(self.store.characters()[0]))
         self.store.save_character(self.revision(), fields)
         self.assertEqual(self.store.characters()[0], before)
@@ -125,12 +233,12 @@ class AdminTests(AdminFixture):
             self.store.save_character(self.revision(), fields)
 
     def test_new_character_is_added_to_master_and_dictionary(self):
-        fields = dict(kind="SPECIAL", name="新キャラ", image="https://example.com/new.png")
+        fields = dict(kind="SPECIAL", name="新キャラ", reading="しんきゃら", image="https://example.com/new.png")
         self.store.save_character(self.revision(), fields)
         self.assertIn("新キャラ", self.books["output"].worksheet("辞書").col_values(1))
-        self.assertEqual(self.store.characters()[-1]["name"], "新キャラ")
+        self.assertEqual([c["name"] for c in self.store.characters()], ["ユウカ", "新キャラ", "ヒビキ"])
         with self.assertRaises(Conflict):
-            self.store.save_character("initial", dict(kind="SPECIAL", name="別キャラ", image="https://example.com/a.png"))
+            self.store.save_character("initial", dict(kind="SPECIAL", name="別キャラ", reading="べつきゃら", image="https://example.com/a.png"))
         self.assertNotIn("別キャラ", self.books["master"].worksheet("SPECIAL").col_values(1))
 
     def test_invalid_image_url_never_writes_master_or_history(self):
@@ -146,9 +254,9 @@ class AdminTests(AdminFixture):
             self.store.save_character(self.revision(), dict(before, original=before["name"], base_hash=character_hash(before)))
 
     def test_master_failure_leaves_a_pending_recovery_record(self):
-        with patch.object(self.books["master"].worksheet("SPECIAL"), "append_row", side_effect=TimeoutError()):
+        with patch.object(self.books["master"], "batch_update", side_effect=TimeoutError()):
             with self.assertRaises(TimeoutError):
-                self.store.save_character(self.revision(), dict(kind="SPECIAL", name="新キャラ", image="https://example.com/x.png"))
+                self.store.save_character(self.revision(), dict(kind="SPECIAL", name="新キャラ", reading="しんきゃら", image="https://example.com/x.png"))
         self.assertEqual(self.store.read(force=True)["events"][-1]["action"], "character_pending")
 
     def test_prepare_is_idempotent_and_does_not_copy_battlelog_rows(self):
@@ -217,6 +325,88 @@ class AdminTests(AdminFixture):
             with self.assertRaises(RuntimeError):
                 restarted.public()
 
+    def test_kana_order_includes_voicing_and_kanji_readings(self):
+        from battlelog_characters import gojuon_key
+        names = ["ミカ", "御坂美琴", "カスミ", "カズサ", "シロコ", "食蜂操祈", "初音ミク", "佐天涙子"]
+        self.assertEqual(sorted(names, key=gojuon_key), ["カズサ", "カスミ", "佐天涙子", "食蜂操祈", "シロコ", "初音ミク", "ミカ", "御坂美琴"])
+
+    def test_new_character_is_sorted_with_boolean_checkbox_and_fullwidth_parentheses(self):
+        fields = dict(kind="STRIKER", name="アコ(レーシング)(通常)", image="https://example.com/image(x).png", range="650", cover="0")
+        self.store.save_character(self.revision(), fields)
+        sheet = self.books["master"].worksheet("STRIKER")
+        self.assertEqual(sheet.values[1][0], "アコ（レーシング）（通常）")
+        self.assertIs(sheet.values[1][2], False)
+        self.assertEqual(sheet.values[1][4], "https://example.com/image(x).png")
+        self.assertEqual(sheet.formats[1][2]["dataValidation"]["condition"]["type"], "BOOLEAN")
+        self.assertEqual([c["name"] for c in self.store.characters()], ["アコ（レーシング）（通常）", "ユウカ", "ヒビキ"])
+        self.assertEqual(self.books["output"].worksheet("辞書").col_values(1)[:3], ["アコ（レーシング）（通常）", "ユウカ", "ヒビキ"])
+
+    def test_delete_and_restore_preserve_attributes_formulas_notes_and_formats(self):
+        sheet = self.books["master"].worksheet("STRIKER")
+        sheet.values[1][3] = "=1+1"
+        sheet.formats[1][3] = {"note":"keep this note", "userEnteredFormat":{"backgroundColor":{"red":1}}}
+        before = self.store.characters()[0]
+        battlelogs = copy.deepcopy(self.books["input"].worksheet("変換前_s11").values)
+        self.store.delete_character(self.revision(), "STRIKER", "ユウカ", character_hash(before))
+        self.assertNotIn("ユウカ", [c["name"] for c in self.store.characters()])
+        self.assertNotIn("ユウカ", self.books["output"].worksheet("辞書").col_values(1))
+        event = self.store.read(force=True)["events"][-1]
+        self.store.restore_deleted_character(self.revision(), event["revision"])
+        restored = next(c for c in self.store.characters() if c["name"] == "ユウカ")
+        self.assertEqual(sheet.values[restored["row"]-1][3], "=1+1")
+        self.assertEqual(sheet.formats[restored["row"]-1][3]["note"], "keep this note")
+        self.assertEqual(sheet.formats[restored["row"]-1][3]["userEnteredFormat"], {"backgroundColor":{"red":1}})
+        self.assertEqual(battlelogs, self.books["input"].worksheet("変換前_s11").values)
+        with self.assertRaises(Conflict):
+            self.store.restore_deleted_character(self.revision(), event["revision"])
+
+    def test_partial_delete_can_be_restored_from_its_start_record(self):
+        before = self.store.characters()[0]
+        with patch.object(self.books["output"], "batch_update", side_effect=TimeoutError()):
+            with self.assertRaises(TimeoutError):
+                self.store.delete_character(self.revision(), "STRIKER", "ユウカ", character_hash(before))
+        event = self.store.read(force=True)["events"][-1]
+        self.assertEqual(event["action"], "character_delete_pending")
+        self.store.restore_deleted_character(self.revision(), event["revision"])
+        self.assertIn("ユウカ", [c["name"] for c in self.store.characters()])
+
+    def test_stale_deletion_does_not_change_rows(self):
+        with self.assertRaises(Conflict):
+            self.store.delete_character(self.revision(), "STRIKER", "ユウカ", "old-hash")
+        self.assertEqual(len(self.store.characters()), 2)
+
+    def test_dictionary_keeps_extra_legacy_candidates_and_other_columns(self):
+        dictionary = self.books["output"].worksheet("辞書")
+        dictionary.values = [["ヒビキ", "keep"], ["旧表記"], ["ユウカ"]]
+        self.store.sync_dictionary()
+        self.assertEqual(dictionary.col_values(1), ["ユウカ", "ヒビキ", "旧表記"])
+        self.assertEqual(dictionary.values[0][1], "keep")
+
+    def test_notice_drafts_publish_edit_restore_and_fullwidth_parentheses(self):
+        fields = {"date":"2026-11-03", "text":"新しい(お知らせ)(確認)", "published":"0"}
+        added = self.store.save_notice(self.revision(), fields)
+        self.assertEqual(added["text"], "新しい（お知らせ）（確認）")
+        self.assertNotIn(added["id"], [n["id"] for n in self.store.public_notices()])
+        fields.update(id=added["id"], base_revision=added["revision"], published="1")
+        published = self.store.save_notice(self.revision(), fields)
+        self.assertEqual(self.store.public_notices()[0]["id"], published["id"])
+        event = self.store.read(force=True)["events"][-1]
+        self.store.restore_notice(self.revision(), event["revision"])
+        self.assertNotIn(added["id"], [n["id"] for n in self.store.public_notices()])
+
+    def test_hidden_notices_do_not_fall_back_to_old_published_html(self):
+        item = self.store.notices(force=True)[0]
+        self.store.save_notice(self.revision(), {**item, "base_revision":item["revision"], "published":"0"})
+        self.assertEqual(self.store.public_notices(), [])
+
+    def test_legacy_notice_import_retains_existing_paragraphs(self):
+        from battlelog_notices import legacy_notices
+        items = legacy_notices()
+        self.assertEqual(len(items), 44)
+        self.assertEqual(items[0]["date"], "2026-10-07")
+        self.assertIn("ツムギ", items[0]["text"])
+        self.assertTrue(all("<" not in item["text"] for item in items))
+
 
 class AdminWebTests(AdminFixture):
     def setUp(self):
@@ -233,6 +423,9 @@ class AdminWebTests(AdminFixture):
             patched = patch(module + ".store", self.store)
             patched.start()
             self.addCleanup(patched.stop)
+        patched = patch("Blue_Archive_Battlelog_collect_public.app.management_store", self.store)
+        patched.start()
+        self.addCleanup(patched.stop)
         self.client = app.test_client()
 
     def get(self, path):
@@ -263,7 +456,7 @@ class AdminWebTests(AdminFixture):
 
     def test_admin_pages_render_and_are_not_cached_or_framed(self):
         self.login()
-        for path in ("/admin/", "/admin/characters", "/admin/characters?kind=STRIKER&name=ユウカ", "/admin/seasons", "/admin/history", "/admin/status"):
+        for path in ("/admin/", "/admin/characters", "/admin/characters?kind=STRIKER&name=ユウカ", "/admin/seasons", "/admin/notices", "/admin/history", "/admin/status"):
             response = self.get(path)
             self.assertEqual(response.status_code, 200, path)
             self.assertEqual(response.headers["Cache-Control"], "no-store")
@@ -305,6 +498,26 @@ class AdminWebTests(AdminFixture):
     def test_missing_settings_on_a_new_host_does_not_fall_back_to_the_wrong_season(self):
         with patch.object(self.store, "public", side_effect=ConnectionError()):
             self.assertEqual(self.get("/upload").status_code, 503)
+
+    def test_delete_form_and_history_restore_are_authenticated(self):
+        self.login()
+        before = self.store.characters()[0]
+        form = {"csrf":self.csrf,"revision":self.revision(),"kind":"STRIKER","name":"ユウカ","base_hash":character_hash(before)}
+        with patch("battlelog_admin.refresh_characters"):
+            self.assertEqual(self.post("/admin/characters/delete",form).status_code,302)
+        event = self.store.read(force=True)["events"][-1]
+        self.assertIn("削除前のキャラを復元",self.get("/admin/history").get_data(as_text=True))
+        form.update(revision=self.revision(),event=event["revision"])
+        self.assertEqual(self.post("/admin/history/restore-deleted",form).status_code,302)
+
+    def test_notice_form_updates_public_fragment_without_executing_html(self):
+        self.login()
+        form = {"csrf":self.csrf,"revision":self.revision(),"date":"2026-11-03","text":"告知(test)<script>alert(1)</script>","published":"1"}
+        self.assertEqual(self.post("/admin/notices/save",form).status_code,302)
+        body = self.get("/notices").get_data(as_text=True)
+        self.assertIn("告知（test）",body)
+        self.assertIn("&lt;script&gt;",body)
+        self.assertNotIn("<script>",body)
 
 
 if __name__ == "__main__":

@@ -190,6 +190,54 @@ def refresh():
     return perform(refresh_characters, "battlelog_admin.characters", "サイトのキャラ一覧を更新しました。")
 
 
+@admin.post("/characters/delete")
+def delete_character():
+    def action():
+        store.delete_character(request.form.get("revision"), request.form.get("kind"), request.form.get("name"), request.form.get("base_hash"))
+        invalidate_characters()
+        try:
+            refresh_characters()
+        except Exception:
+            flash("削除は完了しました。サイトへ今すぐ反映を再実行してください。", "error")
+    return perform(action, "battlelog_admin.characters", "キャラを削除しました。戦績データは残し、削除前の情報を履歴に保存しています。")
+
+
+@admin.post("/characters/order")
+def order_characters():
+    def action():
+        store.normalize_character_order(request.form.get("revision"))
+        invalidate_characters()
+    return perform(action, "battlelog_admin.characters", "キャラ一覧と辞書を、種類ごとの五十音順に整えました。")
+
+
+@admin.post("/history/restore-deleted")
+def restore_deleted():
+    def action():
+        store.restore_deleted_character(request.form.get("revision"), request.form.get("event"))
+        invalidate_characters()
+    return perform(action, "battlelog_admin.history", "削除前のキャラ情報を復元しました。")
+
+
+@admin.get("/notices")
+def notices():
+    items = store.notices(force=True)
+    selected = next((n for n in items if n["id"] == request.args.get("id")), None)
+    return render_template("admin/notices.html", items=items, selected=selected,
+                           today=datetime.now(JST).strftime("%Y-%m-%d"), **context())
+
+
+@admin.post("/notices/save")
+def save_notice():
+    return perform(lambda: store.save_notice(request.form.get("revision"), request.form),
+                   "battlelog_admin.notices", "お知らせを保存しました。公開にした内容はトップページへ反映されます。")
+
+
+@admin.post("/history/restore-notice")
+def restore_notice():
+    return perform(lambda: store.restore_notice(request.form.get("revision"), request.form.get("event")),
+                   "battlelog_admin.history", "お知らせを編集前の内容へ戻しました。")
+
+
 @admin.get("/seasons")
 def seasons():
     return render_template("admin/seasons.html", **context())
