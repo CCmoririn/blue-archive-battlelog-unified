@@ -573,7 +573,7 @@ body {
           配置まで完全一致で検索
         </label>
         <div class="small text-muted ms-4">
-          ※STRIKERは指定枠で照合します。SPは左右の順序を区別しません。チェックなしではSTRIKERも配置不問です。
+          ※チェックなし：指定生徒が入っていれば配置不問で検索
         </div>
       </div>
       <button type="submit" class="btn btn-primary px-4">防衛編成を作成</button>
@@ -730,7 +730,28 @@ body {
         }
       }
     };
-    document.addEventListener("DOMContentLoaded", function () { renderAttackTeams(); });
+    document.addEventListener("DOMContentLoaded", function () {
+      renderAttackTeams();
+      document.querySelectorAll('.show-tpl-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const source = document.getElementById(this.dataset.previewId);
+          const area = document.getElementById('tpl-preview-area');
+          if (!source || !area) return;
+          area.replaceChildren(source.content.cloneNode(true));
+          area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      });
+    });
+
+function toggleCollapse() {
+  const content = document.getElementById('collapseContent');
+  const btn = document.getElementById('collapseToggleBtn');
+  const expanded = content.style.display === 'block';
+  content.style.display = expanded ? 'none' : 'block';
+  btn.textContent = expanded
+    ? '▼ 以下の機能は「さかな山脈」限定・マスクデータです（タップで展開）'
+    : '▲ 以下の機能は「さかな山脈」限定・マスクデータです（タップで閉じる）';
+}
 
   // サイドバー動作
   const hamburgerBtn = document.getElementById('hamburger-btn');

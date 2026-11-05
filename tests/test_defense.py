@@ -181,12 +181,17 @@ class DefensePageTests(unittest.TestCase):
         limited = self.render_page(self.limited,self.limited_app,{'season':'s11'})
         for response in (public,limited):
             self.assertEqual(response.status_code,200)
-            self.assertIn('SPの固定枠はありません'.encode(),response.data)
+            self.assertIn(b'class="defense-best5-list"',response.data)
+            self.assertIn(b'class="rank-badge"',response.data)
             self.assertIn(b'data-defense-rank="1"',response.data)
             self.assertNotIn('PRIVATE-NAME'.encode(),response.data)
-            self.assertNotIn(b'show-tpl-btn',response.data)
-        self.assertNotIn(b'id="defense-analysis-details"',public.data)
-        self.assertIn(b'id="defense-analysis-details"',limited.data)
+            self.assertNotIn(b'class="defense-stats"',response.data)
+            self.assertNotIn(b'class="defense-result"',response.data)
+        self.assertNotIn(b'id="collapseContent"',public.data)
+        self.assertIn(b'id="collapseContent"',limited.data)
+        self.assertIn(b'data-preview-id="defense-preview-1"',limited.data)
+        self.assertIn(b'<template id="defense-preview-1"',limited.data)
+        self.assertNotIn(b'/api/template_detail',limited.data)
 
     def test_unmatched_query_is_escaped_on_both_pages(self):
         malicious = '<img src=x onerror=alert(1)>'

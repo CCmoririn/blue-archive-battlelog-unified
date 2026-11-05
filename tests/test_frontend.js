@@ -76,3 +76,29 @@ vm.runInContext(html.match(/function escapeHtml\(value\) \{[\s\S]*?\n\}/)[0], sa
     assert.equal(sandbox.escapeHtml('<img src=x onerror="x">'), '&lt;img src=x onerror=&quot;x&quot;&gt;');
     console.log('Frontend regressions passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+// Restored defense preview must show the selected search result without a refetch.
+{
+    const source = fs.readFileSync(path.join(__dirname, '../Blue_Archive_Battlelog_collect/templates/defense_suggest.html'), 'utf8');
+    const start = source.indexOf('    document.addEventListener("DOMContentLoaded", function () {');
+    const code = source.slice(start, source.indexOf('  // サイドバー動作', start));
+    const handlers = [];
+    const selected = {dataset: {previewId: 'defense-preview-2'}, addEventListener: (_, fn) => handlers.push(fn)};
+    const cloned = {rank: 2};
+    const area = {replaceChildren(value) { this.selected = value; }, scrollIntoView() { this.scrolled = true; }};
+    const content = {style: {display: 'none'}}, toggle = {};
+    const elements = {'defense-preview-2': {content: {cloneNode: () => cloned}},
+        'tpl-preview-area': area, collapseContent: content, collapseToggleBtn: toggle};
+    const preview = {document: {addEventListener: (_, fn) => fn(), querySelectorAll: () => [selected],
+        getElementById: id => elements[id]}, renderAttackTeams() {},
+        fetch() { throw new Error('Preview must use the original result, not changed inputs'); }};
+    vm.runInNewContext(code, preview);
+    handlers[0].call(selected);
+    assert.equal(area.selected, cloned);
+    assert.equal(area.scrolled, true);
+    preview.toggleCollapse();
+    assert.equal(content.style.display, 'block');
+    preview.toggleCollapse();
+    assert.equal(content.style.display, 'none');
+    console.log('Defense preview and collapse regressions passed.');
+}
