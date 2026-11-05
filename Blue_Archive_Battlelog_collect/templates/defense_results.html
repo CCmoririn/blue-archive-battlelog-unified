@@ -1,0 +1,97 @@
+<style>
+  .defense-results { margin: 24px 0; text-align: left; }
+  .defense-result { padding: 16px; margin: 14px 0; border: 1px solid #cee3ef; border-radius: 12px; background: #fff; }
+  .defense-team { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+  .defense-member { text-align: center; min-width: 0; font-size: 12px; overflow-wrap: anywhere; }
+  .defense-member img { display: block; width: 100%; max-width: 68px; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin: 4px auto; }
+  .defense-stats { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; }
+  .defense-note { color: #526773; font-size: 13px; line-height: 1.7; margin: 10px 0; }
+  .defense-table-wrap { overflow-x: auto; max-height: 600px; margin-top: 12px; }
+  .defense-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .defense-table th, .defense-table td { border: 1px solid #d8e5ec; padding: 8px; white-space: nowrap; }
+  .defense-table th { background: #edf6fb; }
+  .defense-reference { background: #fff4d9; color: #70591f; padding: 3px 8px; border-radius: 6px; font-size: 12px; }
+  .defense-details { margin-top: 16px; padding: 14px; background: #f2f8fc; border-radius: 10px; }
+  .defense-details summary { cursor: pointer; font-weight: bold; }
+  @media (max-width: 480px) { .defense-team { gap: 4px; } .defense-result { padding: 10px; } .defense-member { font-size: 10px; } }
+</style>
+
+<div class="defense-results">
+{% if result %}
+  {% if result.unresolved_conditions %}
+    <p role="status">次の攻撃条件に一致する有効なログがないため、編成を評価できませんでした。</p>
+    <ul>{% for label in result.unresolved_conditions %}<li>{{ label }}</li>{% endfor %}</ul>
+  {% elif not result.candidates %}
+    <p role="status">評価に使えるログがありません。シーズンや攻撃条件を変更してください。</p>
+  {% else %}
+    <h2 style="font-size: 20px;">おすすめ防衛編成</h2>
+    <p class="defense-note">有効な{{ result.valid_games }}試合から、条件に合う{{ result.attack_count }}種類の攻撃を評価しました。SPの固定枠はありません。</p>
+    {% if result.limited_data %}<p class="defense-reference">データが少ないか、勝敗が片方しかないため、シーズン全体の補正値を使った参考表示です。</p>{% endif %}
+    {% for c in result.candidates[:5] %}
+    <article class="defense-result" data-defense-rank="{{ c.rank }}">
+      <strong>{{ c.rank }}位</strong>
+      {% if c.reference %}<span class="defense-reference">参考：同一対戦の実績が少ない候補</span>{% endif %}
+      <div class="defense-team">
+        {% for name in c.team %}
+          {% set pool = striker_list if loop.index0 < 4 else special_list %}
+          {% set found = pool | selectattr('name', 'equalto', name) | list | first %}
+          <div class="defense-member">
+            <span>{{ ['D1', 'D2', 'D3', 'D4', 'SP', 'SP'][loop.index0] }}</span>
+            {% if found and found.image %}<img src="{{ found.image }}" alt="{{ name }}" loading="lazy">{% endif %}
+            <span>{{ name }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="defense-stats">
+        <span>総合評価 <strong>{{ (c.score * 100) | round(1) }}点</strong></span>
+        <span>全体の推定値 {{ (c.mean * 100) | round(1) }}%</span>
+        <span>苦手側の推定値 {{ (c.tail * 100) | round(1) }}%</span>
+        <span>この6人の実績 {{ c.games }}試合</span>
+      </div>
+      {% if show_defense_details %}
+      <details class="defense-details">
+        <summary>この編成の評価根拠</summary>
+        <p class="defense-note">評価する攻撃のうち、この6人との同一対戦の実績がある範囲は{{ (c.direct_coverage * 100) | round(1) }}%です。残り{{ (c.inferred_coverage * 100) | round(1) }}%は、ほかの対戦ログを使った推定です。実績がある範囲でも、表示する評価値は補正した推定です。</p>
+        <div class="defense-table-wrap">
+          <table class="defense-table">
+            <thead><tr><th>攻撃条件</th><th>同一対戦の実績</th><th>実績の防衛勝率</th><th>全体の推定値</th><th>苦手側の推定値</th></tr></thead>
+            <tbody>{% for stat in c.per_group %}<tr>
+              <td>{{ result.groups[loop.index0].label }}</td>
+              <td>{{ stat.games }}試合・{{ stat.wins }}勝</td>
+              <td>{% if stat.observed_rate is not none %}{{ (stat.observed_rate * 100) | round(1) }}%{% else %}実績なし{% endif %}</td>
+              <td>{{ (stat.mean * 100) | round(1) }}%</td><td>{{ (stat.tail * 100) | round(1) }}%</td>
+            </tr>{% endfor %}</tbody>
+          </table>
+        </div>
+        <p class="defense-note">推定上、苦手な攻撃の例：</p>
+        <ul>{% for weak in c.weak_matchups %}<li>{{ weak.attack | join('・') }}：{{ (weak.estimate * 100) | round(1) }}%（同一対戦 {{ weak.games }}試合・{{ weak.wins }}勝）</li>{% endfor %}</ul>
+      </details>
+      {% endif %}
+    </article>
+    {% endfor %}
+    <p class="defense-note">総合評価は、全体の推定値に75%、苦手な攻撃から20%分を集めた推定値に25%の重みを付けた点数です。攻撃条件ごとに等しく重みを付け、その中では異なる攻撃編成を等しく扱います。点数は勝率ではありません。推定は投稿ログに基づき、育成差などは考慮していません。</p>
+    {% if show_defense_details %}
+    <details class="defense-details" id="defense-analysis-details">
+      <summary>評価の詳細・全候補を確認</summary>
+      <p class="defense-note">検索時の条件で計算した結果です。上の入力を編集した場合は、再度「防衛編成を作成」を押してください。</p>
+      <p class="defense-note">計算ID：{{ result.analysis_id }} ／ データ版：{{ result.dataset_version }}</p>
+      <ul>{% for g in result.groups %}<li>{{ g.label }}：{{ g.games }}試合、{{ g.attack_count }}種類の攻撃</li>{% endfor %}</ul>
+      <p class="defense-note">有効な防衛6人を{{ result.candidates | length }}候補比較しました。推定には生徒・配置・SPペアと、攻撃側との組み合わせを使っています。評価対象の攻撃は、すべての候補で共通です。</p>
+      <p class="defense-note">除外した行：重複 {{ result.excluded.get('duplicate', 0) }}、勝敗不明 {{ result.excluded.get('outcome', 0) }}、勝敗矛盾 {{ result.excluded.get('conflicting_outcome', 0) }}、生徒の欠損・未登録 {{ result.excluded.get('missing_or_unknown_character', 0) }}、生徒重複 {{ result.excluded.get('repeated_character', 0) }}、生徒種別の不整合 {{ result.excluded.get('character_role', 0) }}。</p>
+      <div class="defense-table-wrap"><table class="defense-table">
+        <thead><tr><th>順位</th><th>防衛6人（D1〜D4・SP）</th><th>総合評価</th><th>全体</th><th>苦手側</th><th>6人の実績</th><th>同一対戦の実績がある範囲</th></tr></thead>
+        <tbody>{% for c in result.candidates %}<tr>
+          <td>{{ c.rank }}</td><td>{{ c.team | join('・') }}</td><td>{{ (c.score * 100) | round(1) }}点</td>
+          <td>{{ (c.mean * 100) | round(1) }}%</td><td>{{ (c.tail * 100) | round(1) }}%</td><td>{{ c.games }}試合</td><td>{{ (c.direct_coverage * 100) | round(1) }}%</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+    </details>
+    {% endif %}
+  {% endif %}
+{% endif %}
+<div class="usage-guide-box" style="margin-top: 20px;">
+  <strong>防衛編成メーカーの使い方</strong>
+  <p class="defense-note">対策したい攻撃の生徒を指定してください。1人だけでも検索できます。未指定で作成すると、選択シーズンの攻撃全体を対象にします。候補はログにある防衛6人編成です。</p>
+  <p class="defense-note">「配置まで完全一致」はSTRIKERの指定枠に適用します。SPは左右の順序を区別しません。「参考」は、この6人の実績が5試合未満、または同一対戦の実績がある範囲が半分未満の候補です。</p>
+</div>
+</div>

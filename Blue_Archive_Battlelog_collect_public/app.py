@@ -249,9 +249,6 @@ def defense_suggest():
     strict_pos = bool(request.form.get("strict_pos")) if request.method == "POST" else False
 
     if request.method == "POST":
-        # ★ここでprintでデバッグ！
-        for i in range(5):
-            print([request.form.get(f"attack_{i}_{j}", "") for j in range(6)])
         try:
             attacks = []
             for i in range(5):
@@ -269,6 +266,7 @@ def defense_suggest():
                 ]
             if not attacks:
                 attacks = [["", "", "", "", "", ""]]
+            validate_attacks(attacks)
             result = suggest_defense_teams(attacks, season=season, strict_pos=strict_pos)
         except Exception as e:
             app.logger.exception("Defense suggestion failed")

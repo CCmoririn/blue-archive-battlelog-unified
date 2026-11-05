@@ -620,7 +620,7 @@ body {
             配置まで完全一致で検索
           </label>
           <div class="small text-muted ms-4">
-            ※チェックなし：指定生徒が入っていれば配置不問で検索
+            ※STRIKERは指定枠で照合します。SPは左右の順序を区別しません。チェックなしではSTRIKERも配置不問です。
           </div>
         </div>
         <button type="submit" class="btn btn-primary px-4">防衛編成を作成</button>
@@ -632,72 +632,11 @@ body {
 
 
 
-{% if result["上位テンプレ詳細"] %}
-  <div class="input-section-card" style="margin-bottom:22px;">
-    <div class="mb-2 fw-bold" style="color:#268bb8;">おすすめ防衛編成（上位5件）</div>
-    <div class="defense-best5-list">
-      {% for tpl in result["上位テンプレ詳細"] %}
-        <div class="defense-best5-row-wrap" style="position:relative; width:max-content; margin:0 auto;">
-          {# ▼参考バッジ判定を正確化：D1~D4, SP案の参考のみ判定 #}
-          {% set core_chars = tpl["ピックキャラ"] | selectattr("枠", "in", ["D1", "D2", "D3", "D4"]) | list %}
-          {% set has_core_ref = core_chars | selectattr("参考", "equalto", True) | list | length > 0 %}
-          {% set sp_names = tpl["SP案"] %}
-          {% set sp_details = tpl["SP詳細"] %}
-          {% set sp_core_refs = sp_details | selectattr("name", "in", sp_names) | selectattr("参考", "equalto", True) | list %}
-          {% set has_sp_ref = sp_core_refs | length > 0 %}
-          {% set has_ref = has_core_ref or has_sp_ref %}
-          {% if has_ref %}
-            <span class="ref-badge">参考</span>
-          {% endif %}
-          <span class="rank-badge">{{ tpl["順位"] }}</span>
-          <div class="defense-best5-icons-row">
-            {% set char_list = tpl["ピックキャラ"] + [
-              {"キャラ": tpl["SP案"][0], "枠": "DSP1"},
-              {"キャラ": tpl["SP案"][1], "枠": "DSP2"}
-            ] %}
-            {% for c in char_list %}
-              {% set idx = loop.index0 %}
-              {% set found = (striker_list if idx < 4 else special_list)|selectattr("name","equalto",c["キャラ"])|list|first %}
-              <div class="defense-best5-icon">
-                {% if found and found.image %}
-                  <img src="{{ found.image }}" alt="{{ c['キャラ'] }}">
-                {% else %}
-                  <span class="defense-best5-empty"></span>
-                {% endif %}
-              </div>
-            {% endfor %}
-          </div>
-          <div class="defense-best5-label-row">
-            <span class="defense-best5-label">D1</span>
-            <span class="defense-best5-label">D2</span>
-            <span class="defense-best5-label">D3</span>
-            <span class="defense-best5-label">D4</span>
-            <span class="defense-best5-label">DSP1</span>
-            <span class="defense-best5-label">DSP2</span>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-{% endif %}
-
-
-
-<div class="usage-guide-box" style="margin-bottom:22px;">
-  <b>【おすすめ防衛編成メーカーの使い方】</b>
-  <ul style="margin-top:7px; margin-bottom:7px;">
-    <li>上のフォームで「攻撃編成」を入力し、「防衛編成を作成」ボタンを押してください。</li>
-    <li>「おすすめ防衛編成（上位5件）」には、入力した攻撃編成に対して勝率が高い防衛編成候補が表示されます。</li>
-    <li>左側に「参考」と表示されている編成は、サンプル数が少なく統計的な信頼度が低い編成です。</li>
-    <li>あくまでデータから導き出される編成ですので、参考程度でお願いします。</li>
-  </ul>
+{% set show_defense_details = false %}
+{% include 'defense_results.html' %}
 </div>
 
-
-
-
-
-    <!-- キャラ選択モーダル -->
+<!-- キャラ選択モーダル -->
     <div class="modal-bg" id="modalBg">
       <div class="char-modal">
         <div class="modal-title" id="modalTitle">キャラを選択（1枠目）</div>
@@ -857,95 +796,7 @@ body {
         }
       }
     };
-    document.addEventListener("DOMContentLoaded", function () {
-      renderAttackTeams();
-      document.querySelectorAll(".show-tpl-btn").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          const tags = JSON.parse(this.getAttribute("data-tpl"));
-          const attacks = [];
-          for (let i = 0; i < 5; i++) {
-            let arr = [];
-            for (let j = 0; j < 6; j++) {
-              arr.push(attackTeams[i][j] ? attackTeams[i][j].name : "");
-            }
-            if (arr.some(x => x)) attacks.push(arr);
-          }
-          const strictPos = document.getElementById("strict_pos_chk").checked;
-          const season = document.querySelector('[name="season"]').value;
-          fetch("/api/template_detail", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              template_tags: tags,
-              attacks: attacks,
-              season: season,
-              strict_pos: strictPos
-            })
-          })
-          .then(resp => resp.json())
-          .then(data => {
-            renderTplPreview(data, this.getAttribute("data-row"));
-          })
-          .catch(e => {
-            document.getElementById("tpl-preview-area").innerHTML =
-              `<div class="no-result">取得に失敗しました: ${e}</div>`;
-          });
-        });
-      });
-      function renderTplPreview(data, rowIndex) {
-        if (!data || !data["ピックキャラ"]) {
-          document.getElementById("tpl-preview-area").innerHTML =
-            `<div class="no-result">このテンプレの編成案を取得できませんでした。</div>`;
-          return;
-        }
-        let html = `<div class="tpl-preview-title">
-            [${rowIndex}位] このテンプレでの編成案（キャラ/SPピック・詳細）
-          </div>
-          <div class="tpl-preview-body">
-            <div><b>タグセット：</b> `;
-        html += data["テンプレタグ"].map(tag =>
-          `[射程:${tag[0]} 遮蔽:${tag[1] ? "あり" : "なし"}]`
-        ).join(" / ");
-        html += `</div><div><b>キャラ案：</b><ul>`;
-        for (const c of data["ピックキャラ"]) {
-          html += `<li>
-            <span class="char-box">${c["キャラ"]}</span>
-            <span class="tag-box">（${c["枠"]}）</span>
-            ${c["参考"] ? '<span class="ref-cell">参考（30件未満）</span>' : ''}
-            ${c["キャラ勝率"] !== null ? `<span class="small text-muted">勝率: ${(c["キャラ勝率"] * 100).toFixed(1)}%</span>` : ""}
-            <span class="small text-muted">(タグ内件数: ${c["件数"]})</span>
-          </li>`;
-        }
-        html += `</ul></div><div><b>SP案：</b> `;
-        html += data["SP案"].map(sp => `<span class="char-box">${sp}</span>`).join("");
-        if (data["SP詳細"] && data["SP詳細"].length > 0) {
-          html += `<div class="small mt-1"><b>SP詳細:</b><ul style="margin-bottom:0;">`;
-          for (const spd of data["SP詳細"]) {
-            html += `<li>${spd.name}（${spd.games}件・${spd.wins}勝 勝率: ${
-              spd.勝率 !== null ? (spd.勝率 * 100).toFixed(1) + "%" : "–"
-            } / ベイズ: ${(spd.ベイズ勝率 * 100).toFixed(1)}%${spd.参考 ? '<span class="ref-cell">参考</span>' : ""})</li>`;
-          }
-          html += `</ul></div>`;
-        }
-        html += `</div></div>`;
-        document.getElementById("tpl-preview-area").innerHTML = html;
-        document.getElementById("tpl-preview-area").scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    });
-
-
-function toggleCollapse() {
-  var content = document.getElementById('collapseContent');
-  var btn = document.getElementById('collapseToggleBtn');
-  if (content.style.display === 'none' || !content.style.display) {
-    content.style.display = 'block';
-    btn.innerHTML = '▲ 以下の機能は「さかな山脈」限定・マスクデータです（タップで閉じる）';
-  } else {
-    content.style.display = 'none';
-    btn.innerHTML = '▼ 以下の機能は「さかな山脈」限定・マスクデータです（タップで展開）';
-  }
-}
-
+    document.addEventListener("DOMContentLoaded", function () { renderAttackTeams(); });
 
   // サイドバー動作
   const hamburgerBtn = document.getElementById('hamburger-btn');

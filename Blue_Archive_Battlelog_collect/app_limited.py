@@ -256,6 +256,7 @@ def defense_suggest():
                 ]
             if not attacks:
                 attacks = [["", "", "", "", "", ""]]
+            validate_attacks(attacks)
             result = suggest_defense_teams(attacks, season=season, strict_pos=strict_pos)
         except Exception as e:
             import logging
